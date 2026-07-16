@@ -1,0 +1,3605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MedFlow — ระบบติดตามการจัดซื้อยา</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
+
+/* ── MedFlow Design System ──────────────────────────────── */
+:root{
+  --c50:#f5fdf8;  --c100:#ecfaf3; --c150:#d8f2e4;
+  --c200:#c0e8d2; --c300:#8dd4ab; --c400:#52bb83;
+  --c500:#2daa65; --c600:#23794a; --c700:#1a5c34;
+  --c800:#134024; --c900:#0d2f1c; --c950:#061a0e;
+  --ink:#111827; --ink2:#374151; --ink3:#6b7280;
+  --line:#e5e7eb; --line2:#f3f4f6;
+  --bg:#f8fafc; --surface:#ffffff;
+  --blue:#2563eb; --amber:#d97706; --rose:#dc2626;
+  --violet:#7c3aed; --emerald:#059669;
+  --s0:0 1px 2px rgba(0,0,0,.05);
+  --s1:0 1px 4px rgba(0,0,0,.08);
+  --s2:0 4px 16px rgba(0,0,0,.10);
+  --s3:0 8px 32px rgba(0,0,0,.14);
+  --r:10px; --rs:7px; --rl:16px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Sarabun','Segoe UI',system-ui,sans-serif;
+  background:var(--bg); color:var(--ink);
+  font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--line2)}
+::-webkit-scrollbar-thumb{background:var(--c300);border-radius:99px}
+input:focus,select:focus,textarea:focus{
+  outline:none!important;
+  border-color:var(--c500)!important;
+  box-shadow:0 0 0 3px rgba(45,170,101,.16)!important;
+}
+
+/* ── App shell ──────────────────────────────────────────── */
+.min-h-screen{min-height:100vh;background:var(--bg)}
+
+/* ── Topbar (sticky header) ─────────────────────────────── */
+.mf-topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0 14px; margin-bottom:20px;
+  border-bottom:1px solid var(--line);
+  gap:16px;
+}
+
+/* ── Logo ────────────────────────────────────────────────── */
+.mf-logo-wrap{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.mf-logo-img{
+  width:40px;height:40px;border-radius:10px;
+  object-fit:cover;box-shadow:var(--s1);
+  border:1.5px solid var(--c200);
+}
+.mf-logo-name-row{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.mf-project-name{
+  font-size:18px;font-weight:800;color:var(--c900);
+  letter-spacing:-.03em;line-height:1;
+}
+.mf-admin-badge{
+  font-size:10px;font-weight:700;
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  color:#92400e;border:1px solid #fcd34d;
+  padding:2px 7px;border-radius:99px;
+}
+.mf-status-row{display:flex;align-items:center;gap:6px}
+.mf-status-dot{
+  width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;
+}
+.mf-dot-ok{background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.2);animation:pulse 2s infinite}
+.mf-dot-err{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2);animation:pulse 1s infinite}
+.mf-status-ok{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--c500);font-weight:600}
+.mf-status-err{display:flex;align-items:center;gap:5px;font-size:11px;color:#ef4444;font-weight:600}
+.mf-refresh-btn{
+  font-size:13px;color:var(--ink3);background:none;border:none;
+  cursor:pointer;padding:2px 4px;border-radius:4px;
+  transition:all .15s;line-height:1;
+}
+.mf-refresh-btn:hover{color:var(--c600);background:var(--c100)}
+
+/* ── Header button system ────────────────────────────────── */
+.ph-header-btns{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;flex:1}
+.ph-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:0 13px;height:34px;
+  font-size:12px;font-weight:600;
+  border-radius:var(--rs);border:1.5px solid transparent;
+  cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);
+  white-space:nowrap;font-family:inherit;line-height:1;
+  position:relative;letter-spacing:.01em;
+}
+.ph-btn-outline{
+  background:var(--surface);color:var(--c700);
+  border-color:var(--c200);box-shadow:var(--s0);
+}
+.ph-btn-outline:hover{
+  background:var(--c50);border-color:var(--c400);color:var(--c900);
+  box-shadow:var(--s1);transform:translateY(-1px);
+}
+.ph-btn-primary{
+  background:var(--surface);color:var(--c700);
+  border-color:var(--c200);box-shadow:var(--s0);
+}
+.ph-btn-primary:hover{
+  background:var(--c50);border-color:var(--c400);
+  box-shadow:var(--s1);transform:translateY(-1px);
+}
+.ph-btn-green{
+  background:linear-gradient(135deg,var(--c500),var(--c600));
+  color:#fff;border-color:transparent;
+  box-shadow:0 2px 8px rgba(45,170,101,.35);
+}
+.ph-btn-green:hover{
+  background:linear-gradient(135deg,var(--c400),var(--c500));
+  box-shadow:0 4px 14px rgba(45,170,101,.45);transform:translateY(-1px);
+}
+.ph-btn-xs{padding:0 8px;height:28px;font-size:11px}
+.ph-btn:active{transform:translateY(0)!important}
+
+/* ── Stat Cards ──────────────────────────────────────────── */
+.mf-stat-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;
+}
+.mf-stat-card{
+  background:var(--sb,var(--c100));
+  border-radius:var(--r);padding:14px 14px 12px;
+  border:1px solid rgba(0,0,0,.06);
+  box-shadow:var(--s0);transition:all .2s ease;
+  cursor:default;position:relative;overflow:hidden;
+}
+.mf-stat-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;
+  width:3.5px;background:var(--sc,var(--c500));border-radius:2px 0 0 2px;
+}
+.mf-stat-card:hover{box-shadow:var(--s2);transform:translateY(-2px)}
+.mf-stat-icon{font-size:18px;margin-bottom:6px;line-height:1}
+.mf-stat-val{
+  font-size:26px;font-weight:800;color:var(--sc,var(--c900));
+  line-height:1;margin-bottom:3px;
+}
+.mf-stat-lbl{font-size:10.5px;font-weight:600;color:var(--ink3);letter-spacing:.03em}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.mf-tabs{
+  display:flex;gap:3px;padding:4px;
+  background:var(--line2);border-radius:var(--rs);
+  flex-wrap:wrap;width:fit-content;margin-bottom:12px;
+}
+.mf-tab{
+  padding:6px 14px;font-size:12px;font-weight:600;
+  border-radius:5px;border:none;cursor:pointer;
+  background:transparent;color:var(--ink3);
+  transition:all .15s;font-family:inherit;
+}
+.mf-tab:hover{background:rgba(255,255,255,.7);color:var(--c700)}
+.mf-tab.active{background:var(--c900);color:#fff;box-shadow:var(--s0)}
+
+/* ── Search ──────────────────────────────────────────────── */
+.mf-search-input{
+  flex:1;background:var(--surface);
+  border:1.5px solid var(--line);border-radius:var(--rs);
+  padding:8px 13px;font-size:13px;color:var(--ink);
+  font-family:inherit;transition:all .2s;box-shadow:var(--s0);
+}
+.mf-search-input:hover{border-color:var(--c300)}
+
+/* ── Filter panel ────────────────────────────────────────── */
+.mf-filter-panel{
+  background:linear-gradient(135deg,var(--c900),var(--c800));
+  border-radius:var(--rs);padding:12px 16px;margin-bottom:12px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  border:1px solid var(--c700);
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.ph-table,
+table.w-full{width:100%;border-collapse:collapse;font-size:13px}
+.ph-table thead th,
+thead th{
+  background:var(--c900);color:#ffffff;
+  font-size:11px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;padding:10px 14px;text-align:left;
+  border-bottom:2px solid var(--c700);
+}
+.ph-table tbody tr,
+tbody tr{border-bottom:1px solid var(--line2);transition:background .12s}
+.ph-table tbody tr:nth-child(even),
+tbody tr:nth-child(even){background:var(--c50)}
+.ph-table tbody tr:hover,
+tbody tr:hover{background:var(--c100)!important}
+.ph-table td,td{padding:10px 14px;vertical-align:middle}
+
+/* ── Status badges ───────────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 8px;border-radius:99px;
+  font-size:11px;font-weight:700;
+}
+.badge-ordered  {background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.badge-received {background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.badge-inspected{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+.badge-entered  {background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.badge-urg      {background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+.badge-walkin   {background:#fefce8;color:#854d0e;border:1px solid #fde68a}
+.badge-sourcea  {background:var(--c100);color:var(--c700);border:1px solid var(--c200)}
+
+/* ── Modal ───────────────────────────────────────────────── */
+.ph-overlay,.fixed.inset-0{
+  position:fixed;inset:0;z-index:50;
+  background:rgba(6,26,14,.55);backdrop-filter:blur(5px);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:fadeIn .2s ease;
+}
+.ph-modal,
+.bg-white.rounded-2xl{
+  background:var(--surface);border-radius:var(--rl);
+  box-shadow:var(--s3);border:1px solid var(--line);
+  width:100%;overflow:hidden;animation:slideUp .22s ease;
+}
+.modal-header-bar{
+  padding:16px 20px 13px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(to right,var(--c50),var(--surface));
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-footer-bar{
+  padding:12px 20px;border-top:1px solid var(--line);
+  background:var(--bg);display:flex;justify-content:flex-end;gap:8px;
+}
+
+/* ── Login ───────────────────────────────────────────────── */
+.ph-login-bg{
+  min-height:100vh;
+  background:linear-gradient(160deg,var(--c950) 0%,var(--c900) 45%,var(--c800) 80%,var(--c700) 100%);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:12px;position:relative;overflow-y:auto;
+}
+.ph-login-bg::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 25% 50%,rgba(45,170,101,.18) 0%,transparent 55%),
+    radial-gradient(ellipse at 80% 20%,rgba(82,187,131,.1) 0%,transparent 50%);
+}
+.ph-login-card{
+  background:rgba(255,255,255,.98);border-radius:var(--rl);
+  box-shadow:var(--s3),0 0 0 1px rgba(45,170,101,.15);
+  width:100%;max-width:360px;overflow:hidden;
+  position:relative;z-index:1;animation:slideUp .28s ease;
+  margin:auto 0;
+}
+.ph-login-head{
+  background:linear-gradient(160deg,var(--c50) 0%,var(--surface) 100%);
+  padding:28px 26px 20px;text-align:center;
+  border-bottom:1px solid var(--line);
+}
+
+/* ── Login URL section ───────────────────────────────────── */
+.login-url-box{background:#f8f9ff;border:1.5px solid #c7d2fe;border-radius:10px;padding:8px 10px}
+.login-url-title{font-size:11px;font-weight:700;color:#3730a3;text-transform:uppercase;letter-spacing:.06em}
+.login-url-input{
+  width:100%;background:#fff;border:1.5px solid #c7d2fe;border-radius:7px;
+  padding:9px 12px;font-size:11px;font-family:"SF Mono","Fira Code",monospace;
+  color:#1e1b4b;transition:border .2s;
+}
+.login-url-input:focus{outline:none;border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.15)!important}
+.login-url-input::placeholder{color:#a5b4fc}
+.login-url-hint{margin-top:4px;font-size:9.5px;color:#818cf8}
+.login-url-connected{
+  display:flex;align-items:center;gap:9px;
+  background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 14px;
+}
+.login-conn-dot{
+  width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(34,197,94,.2);animation:pulse 2s infinite;
+}
+.login-conn-label{font-size:12px;font-weight:600;color:#15803d}
+.login-footer-row{text-align:center;margin-top:2px}
+.login-change-url-link{
+  font-size:10.5px;color:#9ca3af;background:none;border:none;
+  cursor:pointer;font-family:inherit;padding:2px 4px;transition:color .18s;
+}
+.login-change-url-link:hover{color:#6b7280}
+
+/* ── Toast ───────────────────────────────────────────────── */
+.ph-toast-success{background:linear-gradient(135deg,var(--c900),var(--c800))}
+.ph-toast-error  {background:linear-gradient(135deg,#7f1d1d,#991b1b)}
+.ph-toast-info   {background:linear-gradient(135deg,#1e3a5f,#1d4ed8)}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes pulse  {0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn {from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideRight{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media(max-width:1024px){.mf-stat-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){
+  .mf-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .mf-topbar{flex-wrap:wrap}
+  .ph-header-btns{width:100%}
+  body{font-size:13px}
+}
+</style>
+</head>
+<body>
+<script>
+window.onerror=function(msg,src,line,col,err){
+  var d=document.getElementById('error-display');
+  if(d){d.style.display='block';d.innerHTML='<strong>❌ JavaScript Error:</strong>
+'+msg+'
+Line: '+line+'
+File: '+src;}
+  var l=document.getElementById('loading-indicator');
+  if(l)l.style.display='none';
+  return false;
+};
+</script>
+<div id="loading-indicator" style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;color:#374151">
+  <div style="font-size:32px">💊</div>
+  <p style="font-size:14px;color:#6b7280">กำลังโหลดระบบ...</p>
+  <p style="font-size:11px;color:#9ca3af">กรุณารอสักครู่ อาจใช้เวลาสักครู่ในการโหลดครั้งแรก</p>
+</div>
+<div id="error-display" style="display:none;padding:20px;background:#fee;border:2px solid red;margin:20px;border-radius:8px;font-family:monospace;white-space:pre-wrap"></div>
+<div id="root"></div>
+<script>
+const GAS_URL_KEY = "pharmacy_gas_url";
+const AUTH_KEY = "pharmacy_auth_v2";
+const HARDCODED_GAS_URL = "https://script.google.com/macros/s/AKfycbySGRyZfpX7x-jNiYe9Nb1yUhU3Q5BUmhuR39dQMmc3IowNJglmFJkdOLiALvPFS3cYzw/exec";
+if (HARDCODED_GAS_URL && !localStorage.getItem(GAS_URL_KEY)) {
+  localStorage.setItem(GAS_URL_KEY, HARDCODED_GAS_URL);
+}
+function getAuth() {
+  try {
+    const s = localStorage.getItem(AUTH_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function setAuth(user) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+}
+function clearAuth() {
+  localStorage.removeItem(AUTH_KEY);
+}
+function canEdit(auth) {
+  return auth && auth.role === "admin";
+}
+const {
+  useState,
+  useCallback,
+  useEffect,
+  useRef
+} = React;
+const POLL_MS = 15000;
+const TODAY = new Date().toISOString().slice(0, 10);
+function fmtDate(d) {
+  if (!d) return "—";
+  const s = typeof d === "string" ? d : String(d);
+  if (s === "—") return "—";
+  // ISO datetime: 2025-01-15T... หรือ 2025-01-15 17:00:00
+  const mDT = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ].*/);
+  if (mDT) return mDT[3] + "-" + mDT[2] + "-" + mDT[1];
+  // ISO date: YYYY-MM-DD
+  const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mISO) return mISO[3] + "-" + mISO[2] + "-" + mISO[1];
+  // DD/MM/YYYY หรือ D/M/YYYY
+  const mDMY = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mDMY) return mDMY[1].padStart(2,"0") + "-" + mDMY[2].padStart(2,"0") + "-" + mDMY[3];
+  // DD-MM-YYYY (format ถูกต้องแล้ว)
+  const mDash = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (mDash) return s;
+  return s;
+}
+const SL = {
+  ordered: "สั่งซื้อแล้ว",
+  received: "รับของแล้ว",
+  inspected: "ตรวจรับแล้ว",
+  entered: "ลงใน INVs แล้ว"
+};
+const SO = {
+  ordered: 0,
+  received: 1,
+  inspected: 2,
+  entered: 3
+};
+function ns(x) {
+  if (x.st === "ordered") return "⏳ รอรับของ";
+  if (x.st === "received") return "🔍 รอตรวจรับ";
+  if (x.st === "inspected") return "💾 รอลงใน INVs";
+  return "✅ เสร็จสมบูรณ์";
+}
+function al(x) {
+  if (x.st === "ordered") return "รับของ";
+  if (x.st === "received") return "ตรวจรับ";
+  if (x.st === "inspected") return "ลงใน INVs";
+  return "ดูรายละเอียด";
+}
+function genId() {
+  return "PH-" + Date.now() + "-" + Math.floor(Math.random() * 9999);
+}
+function dupKey(x) {
+  return [String(x.name || "").trim().toLowerCase(), String(x.qty || ""), String(x.unit || "").trim().toLowerCase(), String(x.pack || "").trim().toLowerCase(), String(x.od || "").trim()].join("|");
+}
+function excelDate(v) {
+  if (!v) return TODAY;
+  if (typeof v === "number") {
+    return new Date(Math.round((v - 25569) * 86400 * 1000)).toISOString().slice(0, 10);
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      let y = parseInt(m[3]);
+      if (y < 100) y += 2000;
+      if (y > 2500) y -= 543;
+      return y + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  }
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  return TODAY;
+}
+async function apiGet(u) {
+  const r = await fetch(u, {
+    method: "GET"
+  });
+  const text = await r.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const clean = (text || "").replace(/<[^>]+>/g, " ").trim().substring(0, 200);
+    throw new Error("Response ไม่ใช่ JSON — ตรวจสอบ GAS Deploy settings (Who=Anyone) Preview:" + clean);
+  }
+}
+async function apiPost(u, b) {
+  const r = await fetch(u, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(b)
+  });
+  const text = await r.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const clean = (text || "").replace(/<[^>]+>/g, " ").trim().substring(0, 200);
+    throw new Error("POST Response ไม่ใช่ JSON: " + clean);
+  }
+}
+async function apiPing(u) {
+  try {
+    const r = await fetch(u + "?action=ping", {
+      method: "GET"
+    });
+    const t = await r.text();
+    const j = JSON.parse(t);
+    return j.pong === true;
+  } catch (e) {
+    return false;
+  }
+}
+function StatusBadge({
+  st
+}) {
+  const bg = {
+    ordered: "bg-blue-100 text-blue-800",
+    received: "bg-amber-100 text-amber-800",
+    inspected: "bg-green-100 text-green-800",
+    entered: "bg-teal-100 text-teal-800"
+  };
+  const dot = {
+    ordered: "bg-blue-500",
+    received: "bg-amber-500",
+    inspected: "bg-green-600",
+    entered: "bg-teal-600"
+  };
+  return React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium " + bg[st]
+  }, React.createElement("span", {
+    className: "w-1.5 h-1.5 rounded-full " + dot[st]
+  }), SL[st]);
+}
+function Toasts({
+  list,
+  onRemove
+}) {
+  return React.createElement("div", {
+    className: "fixed top-4 right-4 z-50 flex flex-col gap-2",
+    style: {
+      width: "290px"
+    }
+  }, list.map(t => React.createElement("div", {
+    key: t.id,
+    className: "bg-white border rounded-xl shadow-lg p-3 " + (t.type === "error" ? "border-red-300" : t.type === "success" ? "border-green-300" : "border-orange-300")
+  }, React.createElement("div", {
+    className: "flex items-center gap-2 mb-1"
+  }, React.createElement("span", {
+    className: "w-2 h-2 rounded-full flex-shrink-0 " + (t.type === "error" ? "bg-red-500" : t.type === "success" ? "bg-green-500" : "bg-orange-500")
+  }), React.createElement("span", {
+    className: "text-sm font-medium flex-1 " + (t.type === "error" ? "text-red-900" : t.type === "success" ? "text-green-900" : "text-orange-900")
+  }, t.title), React.createElement("button", {
+    onClick: () => onRemove(t.id),
+    className: "text-gray-400 text-sm"
+  }, "✕")), React.createElement("p", {
+    className: "text-xs text-gray-500"
+  }, t.body))));
+}
+function AlertBanner({
+  items,
+  onDismiss
+}) {
+  if (!items.length) return null;
+  return React.createElement("div", {
+    className: "flex items-start gap-3 bg-orange-50 border border-orange-300 rounded-xl p-3 mb-4"
+  }, React.createElement("span", {
+    className: "text-lg mt-0.5"
+  }, "⚠️"), React.createElement("div", {
+    className: "flex-1"
+  }, React.createElement("p", {
+    className: "text-sm font-medium text-orange-800 mb-2"
+  }, "⚡ รายการยาเร่งด่วนที่ยังค้างดำเนินการ"), items.map(x => React.createElement("div", {
+    key: x.id,
+    className: "flex items-center justify-between bg-orange-100 rounded-lg px-3 py-1.5 mb-1"
+  }, React.createElement("span", {
+    className: "text-sm font-medium text-orange-900"
+  }, "⚡ ", x.name), React.createElement("span", {
+    className: "text-xs text-orange-700 bg-orange-200 px-2 py-0.5 rounded-full"
+  }, ns(x))))), React.createElement("button", {
+    onClick: onDismiss,
+    className: "text-orange-600 text-base mt-0.5"
+  }, "✕"));
+}
+function Timeline({
+  st
+}) {
+  const steps = ["ordered", "received", "inspected", "entered"];
+  const labels = ["จัดซื้อ", "รับของ", "ตรวจรับ", "ลง INVs"];
+  const icons = ["🛒", "📦", "🔍", "💾"];
+  const si = SO[st];
+  return React.createElement("div", {
+    className: "flex mb-5"
+  }, steps.map((s, i) => {
+    const done = i <= si,
+      cur = i === si && s !== "entered";
+    return React.createElement("div", {
+      key: s,
+      className: "flex-1 relative"
+    }, i < 3 && React.createElement("div", {
+      className: "absolute h-0.5 z-0 " + (done ? "bg-teal-500" : "bg-gray-200"),
+      style: {
+        top: "14px",
+        left: "50%",
+        right: "-50%"
+      }
+    }), React.createElement("div", {
+      className: "flex flex-col items-center"
+    }, React.createElement("div", {
+      className: "w-7 h-7 rounded-full flex items-center justify-center text-xs relative z-10 border-2 " + (done ? "bg-teal-500 border-teal-500 text-white" : cur ? "bg-amber-400 border-amber-400 text-white" : "bg-white border-gray-300 text-gray-400")
+    }, icons[i]), React.createElement("span", {
+      className: "text-xs mt-1 text-center " + (done ? "text-teal-700" : "text-gray-400")
+    }, labels[i])));
+  }));
+}
+const DrugListCtx = React.createContext([]);
+function useDrugList() {
+  return React.useContext(DrugListCtx);
+}
+function DrugAutocomplete({
+  value,
+  onChange,
+  placeholder,
+  className
+}) {
+  const drugList = useDrugList();
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState(value || "");
+  const ref = useRef();
+  React.useEffect(() => {
+    setQ(value || "");
+  }, [value]);
+  const filtered = q.length > 0 ? drugList.filter(d => d.toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
+  const pick = name => {
+    setQ(name);
+    onChange(name);
+    setOpen(false);
+  };
+  React.useEffect(() => {
+    const fn = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+  return React.createElement("div", {
+    ref: ref,
+    className: "relative"
+  }, React.createElement("input", {
+    value: q,
+    onChange: e => {
+      setQ(e.target.value);
+      onChange(e.target.value);
+      setOpen(true);
+    },
+    onFocus: () => setOpen(true),
+    placeholder: placeholder,
+    className: className,
+    autoComplete: "off"
+  }), open && filtered.length > 0 && React.createElement("div", {
+    className: "absolute z-50 w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-1 overflow-hidden",
+    style: {
+      maxHeight: "220px",
+      overflowY: "auto"
+    }
+  }, filtered.map((d, i) => React.createElement("div", {
+    key: i,
+    onMouseDown: () => pick(d),
+    className: "px-3 py-2 text-sm text-gray-800 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0"
+  }, d))), open && q.length > 0 && filtered.length === 0 && drugList.length > 0 && React.createElement("div", {
+    className: "absolute z-50 w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-1 px-3 py-2 text-xs text-gray-400"
+  }, "ไม่พบในรายชื่อยา — สามารถกรอกชื่อใหม่ได้เลย"));
+}
+function DrugListUploadModal({
+  onClose,
+  onLoad
+}) {
+  const fileRef = useRef();
+  const [preview, setPreview] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const readFile = file => {
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "csv"].includes(ext)) {
+      setError("กรุณาเลือกไฟล์ .xlsx, .xls หรือ .csv");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), {
+          type: "array"
+        });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {
+          header: 1,
+          defval: ""
+        });
+        const names = [];
+        rows.forEach(row => {
+          row.forEach(cell => {
+            const s = String(cell || "").trim();
+            if (s && !names.includes(s)) names.push(s);
+          });
+        });
+        setPreview(names.slice(0, 10));
+        setLoading(false);
+        onLoad(names);
+      } catch (err) {
+        setError("อ่านไฟล์ไม่ได้: " + err.message);
+        setLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-50 flex items-start justify-center pt-8 px-4"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "460px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "📋 อัปโหลดรายชื่อยา"), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-0.5"
+  }, "ใช้เป็นตัวช่วย autocomplete — ยังกรอกชื่อใหม่ได้เสมอ")), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("div", {
+    className: "border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50 mb-4",
+    onClick: () => fileRef.current.click(),
+    onDragOver: e => {
+      e.preventDefault();
+    },
+    onDrop: e => {
+      e.preventDefault();
+      if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    }
+  }, loading ? React.createElement("p", {
+    className: "text-sm text-gray-500"
+  }, "⏳ กำลังอ่านไฟล์...") : React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-3xl mb-2"
+  }, "📂"), React.createElement("p", {
+    className: "text-sm text-gray-600 font-medium"
+  }, "คลิกหรือลากไฟล์มาวาง"), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-1"
+  }, "รองรับ .xlsx, .xls, .csv"))), React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: ".xlsx,.xls,.csv",
+    className: "hidden",
+    onChange: e => {
+      if (e.target.files[0]) readFile(e.target.files[0]);
+    }
+  }), error && React.createElement("p", {
+    className: "text-xs text-red-600 mb-3"
+  }, "❌ ", error), preview.length > 0 && React.createElement("div", {
+    className: "bg-green-50 border border-green-200 rounded-xl p-3 mb-4"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-green-800 mb-2"
+  }, "✅ โหลดสำเร็จ — ตัวอย่างรายชื่อยา (", preview.length, "+ รายการ)"), React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, preview.map((d, i) => React.createElement("span", {
+    key: i,
+    className: "text-xs bg-white border border-green-200 text-green-800 px-2 py-0.5 rounded-full"
+  }, d)), preview.length >= 10 && React.createElement("span", {
+    className: "text-xs text-green-600"
+  }, "..."))), React.createElement("div", {
+    className: "bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 mb-4"
+  }, "ℹ️ รูปแบบไฟล์: ชื่อยาแต่ละรายการในเซลล์แยกกัน ทุกคอลัมน์และทุกแถวจะถูกนำมาใช้"), React.createElement("div", {
+    className: "flex justify-end"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "✓ ปิด"))));
+}
+function ConfirmModal({
+  title,
+  message,
+  onConfirm,
+  onCancel
+}) {
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full shadow-2xl",
+    style: {
+      maxWidth: "420px"
+    }
+  }, React.createElement("div", {
+    className: "flex items-start gap-3 mb-4"
+  }, React.createElement("span", {
+    className: "text-2xl"
+  }, "⚠️"), React.createElement("div", {
+    className: "flex-1"
+  }, React.createElement("h3", {
+    className: "text-base font-medium text-gray-900 mb-2"
+  }, title), React.createElement("p", {
+    className: "text-sm text-gray-600 whitespace-pre-line leading-relaxed"
+  }, message))), React.createElement("div", {
+    className: "flex justify-end gap-2 mt-5"
+  }, React.createElement("button", {
+    onClick: onCancel,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: onConfirm,
+    className: "px-4 py-2 text-sm bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "✓ ยืนยัน"))));
+}
+function LoginModal({
+  onLogin
+}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [gasInput, setGasInput] = useState(localStorage.getItem(GAS_URL_KEY) || "");
+  const [showUrlField, setShowUrlField] = useState(!localStorage.getItem(GAS_URL_KEY) && !HARDCODED_GAS_URL);
+  const submit = async () => {
+    if (!username.trim() || !password) {
+      setError("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    let gasUrl = localStorage.getItem(GAS_URL_KEY);
+    if (!gasUrl) {
+      const trimUrl = gasInput.trim();
+      if (!trimUrl || !trimUrl.startsWith("https://script.google.com")) {
+        setError("กรุณาระบุ Google Apps Script URL ให้ถูกต้อง");
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem(GAS_URL_KEY, trimUrl);
+      gasUrl = trimUrl;
+    }
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "loginUser",
+        username: username.trim(),
+        password
+      });
+      if (res.ok) {
+        const authData = {
+          ...res.user,
+          loginAt: new Date().toISOString()
+        };
+        setAuth(authData);
+        onLogin(authData);
+      } else {
+        setError(res.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+        setLoading(false);
+      }
+    } catch (e) {
+      const errMsg = e && e.name === "AbortError" ? "หมดเวลาเชื่อมต่อ — GAS อาจยังไม่ได้ Deploy หรือ URL ไม่ถูกต้อง" : "เชื่อมต่อ Google Sheet ไม่ได้ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตและ GAS URL";
+      setError(errMsg);
+      setLoading(false);
+    }
+  };
+  const onKey = e => {
+    if (e.key === "Enter") submit();
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: {
+      background: "linear-gradient(135deg,#1a3a2a 0%,#2d6a4f 50%,#1a3a2a 100%)"
+    }
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl shadow-2xl p-3 w-full",
+    style: {
+      maxWidth: "380px"
+    }
+  }, React.createElement("div", {
+    className: "text-center mb-1"
+  }, React.createElement("img", {
+    src: "data:image/png;base64,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",
+    alt: "MedFlow",
+    style: {width:"48px",height:"48px",borderRadius:"11px",objectFit:"cover",margin:"0 auto 5px",display:"block",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}
+  }), React.createElement("h1", {
+    style: {fontSize:"18px",fontWeight:"800",color:"#0d2f1c",letterSpacing:"-.03em",margin:"0",lineHeight:"1"}
+  }, "MedFlow"), React.createElement("p", {
+    style: {fontSize:"10px",color:"#6b7280",letterSpacing:".12em",marginTop:"5px",fontWeight:"600"}
+  }, React.createElement("span", null, "STREAMLINE · TRACK · CONNECT"), React.createElement("br", null), React.createElement("span", {style:{fontSize:"10px",opacity:.7}}, "Khwaosinrin Hospital"))), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อผู้ใช้งาน"), React.createElement("input", {
+    value: username,
+    onChange: e => setUsername(e.target.value),
+    onKeyDown: onKey,
+    placeholder: "กรอกชื่อผู้ใช้",
+    autoFocus: true,
+    className: "w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:border-teal-500 focus:outline-none"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "รหัสผ่าน"), React.createElement("div", {
+    className: "relative"
+  }, React.createElement("input", {
+    type: showPw ? "text" : "password",
+    value: password,
+    onChange: e => setPassword(e.target.value),
+    onKeyDown: onKey,
+    placeholder: "กรอกรหัสผ่าน",
+    className: "w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm pr-10 focus:border-teal-500 focus:outline-none"
+  }), React.createElement("button", {
+    onClick: () => setShowPw(!showPw),
+    className: "absolute right-3 top-1.5 text-gray-400 text-sm"
+  }, showPw ? "🙈" : "👁️"))), error && React.createElement("div", {
+    className: "bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs text-red-700"
+  }, "❌ ", error), React.createElement("button", {
+    onClick: submit,
+    disabled: loading,
+    className: "w-full py-1.5 rounded-xl text-white font-medium text-sm mt-0.5 " + (loading ? "bg-gray-400" : "bg-teal-700 hover:bg-teal-800")
+  }, loading ? "⏳ กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"), showUrlField ? React.createElement("div", {
+    className: "border border-blue-200 bg-blue-50 rounded-xl p-2"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between mb-2"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-blue-800"
+  }, "🔗 Google Sheet URL"), React.createElement("span", {
+    className: "text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full"
+  }, "ต้องกรอกครั้งแรก")), React.createElement("input", {
+    value: gasInput,
+    onChange: e => setGasInput(e.target.value),
+    placeholder: "https://script.google.com/macros/s/...",
+    className: "w-full border border-blue-200 rounded-lg px-3 py-2 text-xs font-mono bg-white"
+  }), React.createElement("p", {
+    className: "text-xs text-blue-500 mt-1"
+  }, "ได้จาก Google Apps Script → Deploy → Web app URL")) : React.createElement("div", {
+    className: "flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-2 py-1.5"
+  }, React.createElement("span", {
+    className: "text-xs text-green-700 flex items-center gap-1.5"
+  }, React.createElement("span", {
+    className: "w-2 h-2 rounded-full bg-green-500 inline-block flex-shrink-0"
+  }), React.createElement("span", null, "URL ตั้งค่าแล้ว", React.createElement("br", null), React.createElement("span", {
+    className: "text-gray-400 text-xs font-mono"
+  }, (localStorage.getItem(GAS_URL_KEY) || "").substring(40, 70), "...")))), React.createElement("div", {
+    className: "flex items-center justify-center gap-1.5 text-xs text-gray-400"
+  }, React.createElement("span", {
+    className: "w-1.5 h-1.5 rounded-full bg-green-400"
+  }), React.createElement("span", null, "ข้อมูลบัญชีซิงค์จาก Google Sheet")), React.createElement("p", {
+    className: "text-xs text-gray-400 text-center"
+  }, "กรุณาติดต่อผู้ดูแลระบบหากลืมรหัสผ่าน"),
+  !showUrlField && React.createElement("div", {style:{textAlign:"center",marginTop:"1px"}},
+    React.createElement("button", {
+      onClick: () => { localStorage.removeItem(GAS_URL_KEY); setGasInput(""); setShowUrlField(true); },
+      style: {fontSize:"10.5px",color:"#9ca3af",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:"2px 6px"}
+    }, "⚙️ เปลี่ยน GAS URL")
+  ), !showUrlField && React.createElement("button", {
+    onClick: async () => {
+      const url = localStorage.getItem(GAS_URL_KEY) || "";
+      if (!url) return;
+      setLoading(true);
+      setError("⏳ กำลังทดสอบการเชื่อมต่อ...");
+      try {
+        const res = await apiGet(url + "?action=ping");
+        if (res.pong) {
+          setError("✅ GAS เชื่อมต่อได้ปกติ — กด Login ได้เลย");
+        } else {
+          setError("⚠️ GAS ตอบกลับแต่ผิดปกติ: " + (res.error || "unknown"));
+        }
+      } catch (e) {
+        setError("❌ เชื่อมต่อไม่ได้: " + (e.message || e.name || "Failed to fetch") + " — ตรวจสอบ Deploy: Who has access=Anyone");
+      }
+      setLoading(false);
+    },
+    className: "w-full mt-1 py-1 text-xs text-gray-400 border border-gray-100 rounded-lg hover:bg-gray-50"
+  }, "🔍 ทดสอบการเชื่อมต่อ GAS")),
+  React.createElement("div", {
+    style: {textAlign:"center", marginTop:"16px", paddingTop:"14px", borderTop:"1px solid #e5e7eb"}
+  },
+    React.createElement("p", {style:{fontSize:"9.5px",color:"#6b7280",fontWeight:"600",lineHeight:"1.3"}},
+      "พัฒนาโดย ภญ.อรณี ปัตถาติ"),
+    React.createElement("p", {style:{fontSize:"9px",color:"#9ca3af",marginTop:"1px",lineHeight:"1.3"}},
+      "กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค"),
+    React.createElement("p", {style:{fontSize:"9px",color:"#9ca3af",marginTop:"1px",lineHeight:"1.3"}},
+      "โรงพยาบาลเขวาสินรินทร์")
+  )));
+}
+function ChangeCredentialsModal({
+  auth,
+  onClose,
+  onUpdated
+}) {
+  const [newUser, setNewUser] = useState(auth.username);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const submit = async () => {
+    setError("");
+    setSuccess("");
+    const trimUser = newUser.trim();
+    if (!trimUser) {
+      setError("กรุณาระบุชื่อผู้ใช้");
+      return;
+    }
+    if (newPw && newPw.length < 4) {
+      setError("รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัว (ตัวเลขหรือตัวอักษร)");
+      return;
+    }
+    if (newPw && newPw !== confirmPw) {
+      setError("รหัสผ่านใหม่ไม่ตรงกัน");
+      return;
+    }
+    const gasUrl = localStorage.getItem(GAS_URL_KEY);
+    if (!gasUrl) {
+      setError("ไม่พบ Google Sheet URL");
+      return;
+    }
+    try {
+      const verifyRes = await apiPost(gasUrl, {
+        action: "loginUser",
+        username: auth.username,
+        password: oldPw
+      });
+      if (!verifyRes.ok) {
+        setError("รหัสผ่านปัจจุบันไม่ถูกต้อง");
+        return;
+      }
+      const newData = {
+        username: trimUser,
+        displayName: auth.displayName,
+        role: auth.role
+      };
+      if (newPw) newData.password = newPw;
+      const res = await apiPost(gasUrl, {
+        action: "updateUser",
+        oldUsername: auth.username,
+        newData
+      });
+      if (res.ok) {
+        const newAuth = {
+          ...auth,
+          ...res.user
+        };
+        setAuth(newAuth);
+        setSuccess("บันทึกสำเร็จ! กำลังอัปเดต...");
+        setTimeout(() => onUpdated(newAuth), 1200);
+      } else {
+        setError(res.error || "บันทึกไม่สำเร็จ");
+      }
+    } catch (e) {
+      setError("เชื่อมต่อ Google Sheet ไม่ได้");
+    }
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-50 flex items-start justify-center pt-8 px-4"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full",
+    style: {
+      maxWidth: "420px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-5"
+  }, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "🔑 เปลี่ยนข้อมูลบัญชี"), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("div", {
+    className: "bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 mb-4 text-xs text-blue-700"
+  }, "ℹ️ กรอกรหัสผ่านปัจจุบันเพื่อยืนยันตัวตน และเลือกเปลี่ยน username / รหัสผ่าน หรือทั้งคู่"), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อผู้ใช้ใหม่"), React.createElement("input", {
+    value: newUser,
+    onChange: e => setNewUser(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "รหัสผ่านปัจจุบัน *"), React.createElement("input", {
+    type: showPw ? "text" : "password",
+    value: oldPw,
+    onChange: e => setOldPw(e.target.value),
+    placeholder: "ยืนยันตัวตน",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", {
+    className: "border-t border-gray-100 pt-3"
+  }, React.createElement("p", {
+    className: "text-xs text-gray-400 mb-2"
+  }, "เปลี่ยนรหัสผ่าน (เว้นว่างถ้าไม่ต้องการเปลี่ยน)"), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("input", {
+    type: showPw ? "text" : "password",
+    value: newPw,
+    onChange: e => setNewPw(e.target.value),
+    placeholder: "รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }), React.createElement("input", {
+    type: showPw ? "text" : "password",
+    value: confirmPw,
+    onChange: e => setConfirmPw(e.target.value),
+    placeholder: "ยืนยันรหัสผ่านใหม่",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }))), React.createElement("label", {
+    className: "flex items-center gap-2 cursor-pointer text-xs text-gray-500"
+  }, React.createElement("input", {
+    type: "checkbox",
+    checked: showPw,
+    onChange: e => setShowPw(e.target.checked),
+    className: "w-3.5 h-3.5"
+  }), "แสดงรหัสผ่าน"), error && React.createElement("div", {
+    className: "bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700"
+  }, "❌ ", error), success && React.createElement("div", {
+    className: "bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-700"
+  }, "✅ ", success)), React.createElement("div", {
+    className: "flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: submit,
+    className: "px-4 py-2 text-sm bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "💾 บันทึก"))));
+}
+function AdminUsersModal({
+  onClose
+}) {
+  const [users, setUsersState] = useState([]);
+  const [gasLoading, setGasLoading] = useState(true);
+  const [localConfirm, setLocalConfirm] = useState(null);
+  const gasUrl = localStorage.getItem(GAS_URL_KEY) || "";
+  useEffect(() => {
+    if (!gasUrl) return;
+    apiPost(gasUrl, {
+      action: "getUsers"
+    }).then(res => {
+      if (res.ok) setUsersState(res.users || []);
+      setGasLoading(false);
+    }).catch(() => setGasLoading(false));
+  }, []);
+  const [editIdx, setEditIdx] = useState(null);
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+    displayName: "",
+    role: "user"
+  });
+  const [showAdd, setShowAdd] = useState(false);
+  const [error, setError] = useState("");
+  const [showPw, setShowPw] = useState({});
+  const refresh = () => {
+    if (!gasUrl) return;
+    apiPost(gasUrl, {
+      action: "getUsers"
+    }).then(res => {
+      if (res.ok) setUsersState(res.users || []);
+    });
+  };
+  const startEdit = idx => {
+    const u = users[idx];
+    setForm({
+      username: u.username,
+      password: u.password,
+      displayName: u.displayName,
+      role: u.role
+    });
+    setEditIdx(idx);
+    setError("");
+    setShowAdd(false);
+  };
+  const saveEdit = async () => {
+    setError("");
+    const trimUser = form.username.trim();
+    if (!trimUser || !form.password || !form.displayName.trim()) {
+      setError("กรุณากรอกข้อมูลให้ครบ");
+      return;
+    }
+    if (form.password.length < 4) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 4 ตัว (ตัวเลขหรือตัวอักษร)");
+      return;
+    }
+    if (!gasUrl) {
+      setError("ไม่พบ Google Sheet URL");
+      return;
+    }
+    try {
+      let res;
+      if (editIdx !== null) {
+        const newData = {
+          username: trimUser,
+          password: form.password,
+          displayName: form.displayName.trim(),
+          role: form.role
+        };
+        res = await apiPost(gasUrl, {
+          action: "updateUser",
+          oldUsername: users[editIdx].username,
+          newData
+        });
+      } else {
+        res = await apiPost(gasUrl, {
+          action: "addUser",
+          userData: {
+            username: trimUser,
+            password: form.password,
+            displayName: form.displayName.trim(),
+            role: form.role
+          }
+        });
+      }
+      if (res.ok) {
+        refresh();
+        setEditIdx(null);
+        setShowAdd(false);
+        setForm({
+          username: "",
+          password: "",
+          displayName: "",
+          role: "user"
+        });
+        setError("");
+      } else {
+        setError(res.error || "บันทึกไม่สำเร็จ");
+      }
+    } catch (e) {
+      setError("เชื่อมต่อ Google Sheet ไม่ได้");
+    }
+  };
+  const proceedDeleteUser = async idx => {
+    if (!gasUrl) {
+      addToastLocal("ไม่พบ Google Sheet URL");
+      return;
+    }
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "deleteUser",
+        username: users[idx].username
+      });
+      if (res.ok) {
+        refresh();
+        if (editIdx === idx) setEditIdx(null);
+      } else {
+        addToastLocal(res.error || "ลบไม่สำเร็จ");
+      }
+    } catch (e) {
+      addToastLocal("เชื่อมต่อ Google Sheet ไม่ได้");
+    }
+  };
+  const deleteUser = idx => {
+    setLocalConfirm({
+      title: "🗑️ ยืนยันลบผู้ใช้",
+      message: "ผู้ใช้: " + users[idx].displayName + "\n\nต้องการลบบัญชีนี้หรือไม่?",
+      onConfirm: () => {
+        setLocalConfirm(null);
+        proceedDeleteUser(idx);
+      },
+      onCancel: () => setLocalConfirm(null)
+    });
+  };
+  const [localError, setLocalError] = useState("");
+  const addToastLocal = msg => {
+    setLocalError(msg);
+    setTimeout(() => setLocalError(""), 3000);
+  };
+  const startAdd = () => {
+    setForm({
+      username: "",
+      password: "",
+      displayName: "",
+      role: "user"
+    });
+    setShowAdd(true);
+    setEditIdx(null);
+    setError("");
+  };
+  const FormPanel = () => React.createElement("div", {
+    className: "bg-gray-50 border border-gray-200 rounded-xl p-4 mt-3"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-700 mb-3"
+  }, editIdx !== null ? "✏️ แก้ไขข้อมูลผู้ใช้" : "➕ เพิ่มผู้ใช้ใหม่"), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mb-2"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อแสดง *"), React.createElement("input", {
+    value: form.displayName,
+    onChange: e => setForm(p => ({
+      ...p,
+      displayName: e.target.value
+    })),
+    placeholder: "เช่น ภก.สมชาย",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "บทบาท"), React.createElement("select", {
+    value: form.role,
+    onChange: e => setForm(p => ({
+      ...p,
+      role: e.target.value
+    })),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+  }, React.createElement("option", {
+    value: "user"
+  }, "👤 ผู้ใช้งาน"), React.createElement("option", {
+    value: "admin"
+  }, "👑 แอดมิน")))), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mb-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "Username *"), React.createElement("input", {
+    value: form.username,
+    onChange: e => setForm(p => ({
+      ...p,
+      username: e.target.value
+    })),
+    placeholder: "ชื่อผู้ใช้",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "รหัสผ่าน * (อย่างน้อย 4 ตัว)"), React.createElement("input", {
+    type: "text",
+    value: form.password,
+    onChange: e => setForm(p => ({
+      ...p,
+      password: e.target.value
+    })),
+    placeholder: "อย่างน้อย 4 ตัว",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white font-mono"
+  }))), error && React.createElement("div", {
+    className: "bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 text-xs text-red-700 mb-2"
+  }, "❌ ", error), React.createElement("div", {
+    className: "flex justify-end gap-2"
+  }, React.createElement("button", {
+    onClick: () => {
+      setEditIdx(null);
+      setShowAdd(false);
+      setError("");
+    },
+    className: "px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-100"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: saveEdit,
+    className: "px-3 py-1.5 text-xs bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "💾 บันทึก")));
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-50 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "580px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "👥 จัดการผู้ใช้งาน"), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-0.5"
+  }, "ข้อมูลบัญชีทั้งหมดในระบบ (สิทธิ์แอดมินเท่านั้น)")), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), gasLoading && React.createElement("div", {
+    className: "text-center py-8 text-gray-400 text-sm"
+  }, "⏳ กำลังโหลดข้อมูลผู้ใช้จาก Google Sheet..."), !gasLoading && React.createElement("div", {
+    className: "border border-gray-200 rounded-xl overflow-hidden mb-3"
+  }, React.createElement("table", {
+    className: "w-full text-sm"
+  }, React.createElement("thead", {
+    className: "bg-gray-50 border-b border-gray-200"
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-3 py-2 text-left text-xs font-medium text-gray-500"
+  }, "ชื่อแสดง"), React.createElement("th", {
+    className: "px-3 py-2 text-left text-xs font-medium text-gray-500"
+  }, "Username"), React.createElement("th", {
+    className: "px-3 py-2 text-left text-xs font-medium text-gray-500"
+  }, "รหัสผ่าน"), React.createElement("th", {
+    className: "px-3 py-2 text-left text-xs font-medium text-gray-500"
+  }, "บทบาท"), React.createElement("th", {
+    className: "px-3 py-2",
+    style: {
+      width: "80px"
+    }
+  }))), React.createElement("tbody", null, users.map((u, i) => React.createElement("tr", {
+    key: i,
+    className: "border-b border-gray-100 last:border-0 " + (editIdx === i ? "bg-teal-50" : "hover:bg-gray-50")
+  }, React.createElement("td", {
+    className: "px-3 py-2.5 font-medium text-gray-900"
+  }, u.displayName), React.createElement("td", {
+    className: "px-3 py-2.5 font-mono text-xs text-gray-700"
+  }, u.username), React.createElement("td", {
+    className: "px-3 py-2.5"
+  }, React.createElement("span", {
+    className: "font-mono text-xs " + (showPw[i] ? "text-gray-900" : "text-gray-400 select-none")
+  }, showPw[i] ? u.password : "••••••"), React.createElement("button", {
+    onClick: () => setShowPw(p => ({
+      ...p,
+      [i]: !p[i]
+    })),
+    className: "ml-1.5 text-gray-300 hover:text-gray-500 text-xs"
+  }, showPw[i] ? "🙈" : "👁️")), React.createElement("td", {
+    className: "px-3 py-2.5"
+  }, u.role === "admin" ? React.createElement("span", {
+    className: "text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full"
+  }, "👑 แอดมิน") : React.createElement("span", {
+    className: "text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
+  }, "👤 ผู้ใช้งาน")), React.createElement("td", {
+    className: "px-3 py-2.5"
+  }, React.createElement("div", {
+    className: "flex gap-1"
+  }, React.createElement("button", {
+    onClick: () => startEdit(i),
+    className: "text-xs border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-100 text-gray-600"
+  }, "✎"), React.createElement("button", {
+    onClick: () => deleteUser(i),
+    className: "text-xs border border-red-200 rounded px-2 py-0.5 hover:bg-red-50 text-red-500"
+  }, "✕")))))))), !gasLoading && (editIdx !== null || showAdd) && React.createElement(FormPanel, null), React.createElement("div", {
+    className: "flex justify-between items-center pt-3 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: startAdd,
+    disabled: showAdd || editIdx !== null,
+    className: "text-sm px-4 py-2 rounded-lg border " + (showAdd || editIdx !== null ? "border-gray-200 text-gray-300 cursor-not-allowed" : "border-teal-300 text-teal-700 hover:bg-teal-50")
+  }, "➕ เพิ่มผู้ใช้ใหม่"), React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ปิด"))), localError && React.createElement("div", {
+    className: "fixed top-4 right-4 z-[60] bg-red-50 border border-red-300 rounded-xl px-4 py-2 text-sm text-red-700 shadow-lg"
+  }, "❌ ", localError), localConfirm && React.createElement(ConfirmModal, {
+    title: localConfirm.title,
+    message: localConfirm.message,
+    onConfirm: localConfirm.onConfirm,
+    onCancel: localConfirm.onCancel
+  }));
+}
+function SetupModal({
+  onSave
+}) {
+  const [url, setUrl] = useState(localStorage.getItem(GAS_URL_KEY) || "");
+  const save = () => {
+    const t = url.trim();
+    if (!t.startsWith("https://script.google.com")) {
+      alert("URL ไม่ถูกต้อง");
+      return;
+    }
+    localStorage.setItem(GAS_URL_KEY, t);
+    onSave(t);
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-gray-900 bg-opacity-80 z-50 flex items-center justify-center px-4"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl p-6 w-full",
+    style: {
+      maxWidth: "520px"
+    }
+  }, React.createElement("div", {
+    className: "text-center mb-5"
+  }, React.createElement("div", {
+    className: "text-4xl mb-3"
+  }, "⚙️"), React.createElement("h2", {
+    className: "text-lg font-medium"
+  }, "ตั้งค่าการเชื่อมต่อ Google Sheet"), React.createElement("p", {
+    className: "text-sm text-gray-500 mt-1"
+  }, "ต้องทำครั้งเดียว")), React.createElement("div", {
+    className: "bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-xs text-blue-800 leading-relaxed"
+  }, React.createElement("p", {
+    className: "font-medium mb-2"
+  }, "📋 วิธีสร้าง Backend (~10 นาที ทำครั้งเดียว)"), React.createElement("ol", {
+    className: "list-decimal list-inside space-y-1"
+  }, React.createElement("li", null, "สร้าง Google Sheet ใหม่"), React.createElement("li", null, "Extensions → Apps Script → วางโค้ดจากไฟล์ google_apps_script_backend.js"), React.createElement("li", null, "Deploy → New deployment → Web app → Anyone → Deploy"), React.createElement("li", null, "Copy URL แล้ววางด้านล่าง"))), React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "Google Apps Script Web App URL *"), React.createElement("input", {
+    value: url,
+    onChange: e => setUrl(e.target.value),
+    placeholder: "https://script.google.com/macros/s/XXXXX/exec",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 font-mono"
+  }), React.createElement("button", {
+    onClick: save,
+    className: "w-full bg-teal-700 text-white py-2.5 rounded-xl font-medium hover:bg-teal-800"
+  }, "เชื่อมต่อ Google Sheet →")));
+}
+function WalkInBox({
+  x
+}) {
+  if (!x || !x.walkIn) return null;
+  const drugName = (x.name || "").replace("[นอกรายการ] ", "");
+  return React.createElement("div", {
+    className: "mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800"
+  }, React.createElement("p", {
+    className: "font-medium mb-1"
+  }, "📦 รายการยาที่รับนอกระบบ"), React.createElement("p", null, "ชื่อ: ", React.createElement("span", {
+    className: "font-medium"
+  }, drugName)), x.qty > 0 && React.createElement("p", null, "จำนวน: ", React.createElement("span", {
+    className: "font-medium"
+  }, Number(x.qty).toLocaleString(), " ", x.unit)));
+}
+function DetailModal({
+  auth,
+  item,
+  onClose,
+  onSaveRv,
+  onSaveIns,
+  onSaveEn,
+  onToggleUrg,
+  onEdit,
+  saving
+}) {
+  const [rvWho, setRvWho] = useState(auth && auth.displayName ? auth.displayName : "");
+  const [rvDate, setRvDate] = useState(TODAY);
+  const [rvLoc, setRvLoc] = useState("คลังยาใหญ่");
+  const [rvNote, setRvNote] = useState("");
+  const [inDate, setInDate] = useState(TODAY);
+  const [inNote, setInNote] = useState("");
+  const [enWho, setEnWho] = useState("วิลาวัณย์");
+  const [enDate, setEnDate] = useState(TODAY);
+  const [enNote, setEnNote] = useState("");
+  const x = item;
+  const Btn = ({
+    onClick,
+    children
+  }) => React.createElement("button", {
+    onClick: onClick,
+    disabled: saving,
+    className: "text-white text-sm px-4 py-1.5 rounded-lg " + (saving ? "bg-gray-400 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800")
+  }, saving ? "⏳ กำลังบันทึก..." : children);
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "520px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-start mb-4"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-medium text-gray-900"
+  }, x.walkIn ? (x.name || "").replace("[นอกรายการ] ", "") : x.name, x.urg ? " ⚡" : ""), React.createElement("p", {
+    className: "text-xs text-gray-500 mt-0.5"
+  }, "สั่งซื้อวันที่ ", fmtDate(x.od), " · จำนวน ", Number(x.qty || 0).toLocaleString(), " ", x.unit, x.pack ? " · " + x.pack : "")), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600 text-lg ml-4"
+  }, "✕")), React.createElement(Timeline, {
+    st: x.st
+  }), React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-gray-100 pb-1 mb-3"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-500"
+  }, x.walkIn ? "📦 ข้อมูลรายการนอกระบบ" : "📋 ข้อมูลจัดซื้อ"), canEdit(auth) && React.createElement("button", {
+    onClick: onEdit,
+    className: "text-xs text-teal-600 border border-teal-200 rounded-lg px-2 py-0.5 hover:bg-teal-50"
+  }, "✎ แก้ไข"), x.sourceA && React.createElement("span", {
+    className: "text-xs text-blue-500 bg-blue-50 border border-blue-200 rounded-lg px-2 py-0.5"
+  }, "📋 ข้อมูลจากไฟล์แผนจัดซื้อ")), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 mb-2"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "จำนวน"), React.createElement("p", {
+    className: "text-sm"
+  }, Number(x.qty || 0).toLocaleString(), " ", x.unit)), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "ขนาดบรรจุ"), React.createElement("p", {
+    className: "text-sm"
+  }, x.pack || "—"))), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "วันที่สั่งซื้อ"), React.createElement("p", {
+    className: "text-sm"
+  }, fmtDate(x.od))), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "ระดับความเร่งด่วน"), React.createElement("div", {
+    className: "flex items-center gap-2 mt-0.5"
+  }, x.urg ? React.createElement("span", {
+    className: "text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full"
+  }, "⚡ เร่งด่วน") : React.createElement("span", {
+    className: "text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"
+  }, "ปกติ"), React.createElement("button", {
+    onClick: () => onToggleUrg(!x.urg),
+    disabled: saving,
+    className: "text-xs px-2 py-0.5 rounded-full border " + (x.urg ? "border-gray-300 text-gray-500 hover:bg-gray-50" : "border-orange-300 text-orange-600 hover:bg-orange-50") + (saving ? " opacity-40 cursor-not-allowed" : "")
+  }, x.urg ? "เปลี่ยนเป็นปกติ" : "เปลี่ยนเป็นเร่งด่วน ⚡"))))), React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-500 border-b border-gray-100 pb-1 mb-3"
+  }, "📦 ขั้นตอนที่ 2 — รับของ"), x.rv ? React.createElement("div", null, React.createElement("div", {
+    className: "grid grid-cols-3 gap-3 mb-2"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "ผู้รับของ"), React.createElement("p", {
+    className: "text-sm"
+  }, x.rv.who)), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "วันที่รับ"), React.createElement("p", {
+    className: "text-sm"
+  }, fmtDate(x.rv.date))), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "สถานที่เก็บ"), React.createElement("p", {
+    className: "text-sm"
+  }, x.rv.loc))), x.rv.note && React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "หมายเหตุ"), React.createElement("p", {
+    className: "text-sm bg-gray-50 rounded-lg px-3 py-2 mt-1"
+  }, x.rv.note))) : React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ผู้รับของ"), React.createElement("div", {
+    className: "flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-teal-50"
+  }, React.createElement("span", {
+    className: "text-sm font-medium text-teal-800 flex-1"
+  }, "👤 ", rvWho || "(ไม่ระบุ)"), React.createElement("span", {
+    className: "text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full"
+  }, "จาก session"))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่รับ"), React.createElement("input", {
+    type: "date",
+    value: rvDate,
+    onChange: e => setRvDate(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "สถานที่เก็บยา"), React.createElement("select", {
+    value: rvLoc,
+    onChange: e => setRvLoc(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+  }, React.createElement("option", {
+    value: "คลังยาใหญ่"
+  }, "คลังยาใหญ่ (default)"), React.createElement("option", {
+    value: "คลังยาย่อย"
+  }, "คลังยาย่อย"))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หมายเหตุ"), React.createElement("textarea", {
+    value: rvNote,
+    onChange: e => setRvNote(e.target.value),
+    rows: 2,
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm resize-none"
+  })), React.createElement("div", {
+    className: "flex justify-end"
+  }, React.createElement(Btn, {
+    onClick: () => {
+      onSaveRv({
+        who: rvWho.trim(),
+        date: rvDate,
+        loc: rvLoc,
+        note: rvNote.trim()
+      });
+    }
+  }, "✓ ยืนยันรับของ")))), x.rv && x.st === "received" && !x.ins && React.createElement("div", {
+    style: {background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:"10px",padding:"12px 14px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px"}
+  },
+    React.createElement("span", {style:{fontSize:"20px"}}, "✅"),
+    React.createElement("div", null,
+      React.createElement("p", {style:{fontSize:"13px",fontWeight:"700",color:"#15803d"}},"บันทึกการรับของสำเร็จแล้ว"),
+      React.createElement("p", {style:{fontSize:"11px",color:"#16a34a",marginTop:"2px"}},"ปิดหน้านี้และเปิดรายการใหม่เพื่อดำเนินการขั้นถัดไป")
+    )
+  ), x.rv && (x.ins || x.st !== "received") && React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-500 border-b border-gray-100 pb-1 mb-3"
+  }, "🔍 ขั้นตอนที่ 3 — ตรวจรับ (ภญ.อรณี)"), React.createElement(WalkInBox, {
+    x: x
+  }), x.ins ? React.createElement("div", null, React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 mb-2"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "ผู้ตรวจรับ"), React.createElement("p", {
+    className: "text-sm"
+  }, "ภญ.อรณี")), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "วันที่ตรวจรับ"), React.createElement("p", {
+    className: "text-sm"
+  }, fmtDate(x.ins.date)))), x.ins.note && React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "หมายเหตุ"), React.createElement("p", {
+    className: "text-sm bg-gray-50 rounded-lg px-3 py-2 mt-1"
+  }, x.ins.note))) : React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ผู้ตรวจรับ"), React.createElement("input", {
+    value: "ภญ.อรณี",
+    readOnly: true,
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-gray-50 opacity-70"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่ตรวจรับ"), React.createElement("input", {
+    type: "date",
+    value: inDate,
+    onChange: e => setInDate(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หมายเหตุ"), React.createElement("textarea", {
+    value: inNote,
+    onChange: e => setInNote(e.target.value),
+    rows: 2,
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm resize-none"
+  })), React.createElement("div", {
+    className: "flex justify-end"
+  }, React.createElement(Btn, {
+    onClick: () => onSaveIns({
+      date: inDate,
+      note: inNote.trim()
+    })
+  }, "✓ ยืนยันตรวจรับ")))), x.ins && x.st === "inspected" && !x.en && React.createElement("div", {
+    style: {background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:"10px",padding:"12px 14px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px"}
+  },
+    React.createElement("span", {style:{fontSize:"20px"}}, "✅"),
+    React.createElement("div", null,
+      React.createElement("p", {style:{fontSize:"13px",fontWeight:"700",color:"#15803d"}},"บันทึกการตรวจรับสำเร็จแล้ว"),
+      React.createElement("p", {style:{fontSize:"11px",color:"#16a34a",marginTop:"2px"}},"ปิดหน้านี้และเปิดรายการใหม่เพื่อดำเนินการขั้นถัดไป")
+    )
+  ), x.ins && (x.en || x.st !== "inspected") && React.createElement("div", {
+    className: "mb-2"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-500 border-b border-gray-100 pb-1 mb-3"
+  }, "💾 ขั้นตอนที่ 4 — ลงรับใน INVs"), React.createElement(WalkInBox, {
+    x: x
+  }), x.en ? React.createElement("div", null, React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 mb-2"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "ผู้ลงข้อมูล"), React.createElement("p", {
+    className: "text-sm"
+  }, x.en.who)), React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "วันที่ลงข้อมูล"), React.createElement("p", {
+    className: "text-sm"
+  }, fmtDate(x.en.date)))), x.en.note && React.createElement("div", null, React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "หมายเหตุ"), React.createElement("p", {
+    className: "text-sm bg-gray-50 rounded-lg px-3 py-2 mt-1"
+  }, x.en.note)), React.createElement("div", {
+    className: "mt-3 p-3 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-800 text-center font-medium"
+  }, "✅ ดำเนินการครบทุกขั้นตอนแล้ว")) : React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ผู้ลงข้อมูล *"), React.createElement("input", {
+    value: enWho,
+    onChange: e => setEnWho(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่ลงข้อมูล"), React.createElement("input", {
+    type: "date",
+    value: enDate,
+    onChange: e => setEnDate(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หมายเหตุ"), React.createElement("textarea", {
+    value: enNote,
+    onChange: e => setEnNote(e.target.value),
+    rows: 2,
+    className: "w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm resize-none"
+  })), React.createElement("div", {
+    className: "flex justify-end"
+  }, React.createElement(Btn, {
+    onClick: () => {
+      if (!enWho.trim()) {
+        alert("กรุณาระบุชื่อผู้ลงข้อมูล");
+        return;
+      }
+      onSaveEn({
+        who: enWho.trim(),
+        date: enDate,
+        note: enNote.trim()
+      });
+    }
+  }, "✓ ยืนยันลงรับใน INVs"))))));
+}
+function EditItemModal({
+  item,
+  onClose,
+  onSave,
+  saving,
+  auth
+}) {
+  const [eName, setEName] = useState(item.name || "");
+  const [eQty, setEQty] = useState(String(item.qty || ""));
+  const [eUnit, setEUnit] = useState(item.unit || "");
+  const [ePack, setEPack] = useState(item.pack || "");
+  const [eOd, setEOd] = useState(item.od || TODAY);
+  const [eUrg, setEUrg] = useState(!!item.urg);
+  const [eSt, setESt] = useState(item.st || "ordered");
+  const isAdmin = auth && auth.role === "admin";
+  const submit = () => {
+    if (!eName.trim()) {
+      alert("กรุณาระบุชื่อยา");
+      return;
+    }
+    onSave({
+      ...item,
+      name: eName.trim(),
+      qty: parseFloat(eQty) || 0,
+      unit: eUnit.trim(),
+      pack: ePack.trim(),
+      od: eOd,
+      urg: eUrg,
+      st: isAdmin ? eSt : item.st
+    });
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-50 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "480px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-1"
+  }, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "✏️ แก้ไขข้อมูลจัดซื้อ"), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("p", {
+    className: "text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4"
+  }, "⚠️ แก้ไขได้เฉพาะรายการที่ยังไม่ได้รับของ"), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อยา / เวชภัณฑ์ *"), React.createElement("input", {
+    value: eName,
+    onChange: e => setEName(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "จำนวนสั่งซื้อ"), React.createElement("input", {
+    type: "number",
+    value: eQty,
+    onChange: e => setEQty(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หน่วย"), React.createElement("input", {
+    value: eUnit,
+    onChange: e => setEUnit(e.target.value),
+    placeholder: "เม็ด, ขวด...",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ขนาดบรรจุ"), React.createElement("input", {
+    value: ePack,
+    onChange: e => setEPack(e.target.value),
+    placeholder: "เช่น 1000 เม็ด/ขวด",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่สั่งซื้อ"), React.createElement("input", {
+    type: "date",
+    value: eOd,
+    onChange: e => setEOd(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("label", {
+    className: "flex items-center gap-2 cursor-pointer"
+  }, React.createElement("input", {
+    type: "checkbox",
+    checked: eUrg,
+    onChange: e => setEUrg(e.target.checked),
+    className: "w-4 h-4 accent-teal-600"
+  }), React.createElement("span", {
+    className: "text-sm"
+  }, "⚡ รายการเร่งด่วน"))),
+  isAdmin && React.createElement("div", {
+    style: {background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:"10px",padding:"12px 14px",marginTop:"4px"}
+  },
+    React.createElement("div", {style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"8px"}},
+      React.createElement("span", {style:{fontSize:"13px"}}, "🔐"),
+      React.createElement("span", {style:{fontSize:"11px",fontWeight:"700",color:"#92400e",textTransform:"uppercase",letterSpacing:".06em"}}, "Admin: ปรับสถานะรายการ")
+    ),
+    React.createElement("select", {
+      value: eSt,
+      onChange: e => setESt(e.target.value),
+      style: {width:"100%",border:"1.5px solid #fcd34d",borderRadius:"7px",padding:"8px 12px",fontSize:"13px",fontFamily:"inherit",background:"white",color:"#1a1a1a",cursor:"pointer"}
+    },
+      React.createElement("option", {value:"ordered"}, "⏳ สั่งซื้อแล้ว — รอรับของ"),
+      React.createElement("option", {value:"received"}, "📦 รับของแล้ว — รอตรวจรับ"),
+      React.createElement("option", {value:"inspected"}, "🔍 ตรวจรับแล้ว — รอลงใน INVs"),
+      React.createElement("option", {value:"entered"}, "✅ ลงใน INVs แล้ว")
+    ),
+    eSt !== item.st && React.createElement("p", {
+      style:{fontSize:"10.5px",color:"#92400e",marginTop:"6px",fontWeight:"600"}
+    }, "⚠️ จะเปลี่ยนสถานะ: [" + (SL[item.st]||item.st) + "] เป็น [" + (SL[eSt]||eSt) + "]")
+  ),
+  React.createElement("div", {
+    className: "flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: submit,
+    disabled: saving,
+    className: "px-4 py-2 text-sm rounded-lg text-white " + (saving ? "bg-gray-400 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800")
+  }, saving ? "⏳ กำลังบันทึก..." : "💾 บันทึกการแก้ไข"))));
+}
+function AddItemModal({
+  onClose,
+  onAdd,
+  saving
+}) {
+  const [name, setName] = React.useState("");
+  const [qty, setQty]   = React.useState("");
+  const [unit, setUnit] = React.useState("");
+  const [pack, setPack] = React.useState("");
+  const [od, setOd]     = React.useState(TODAY);
+  const [urg, setUrg]   = React.useState(false);
+  const submit = () => {
+    if (!name.trim()) { alert("กรุณาระบุชื่อยา/เวชภัณฑ์"); return; }
+    onAdd({
+      id: genId(),
+      name: name.trim(),
+      qty: parseFloat(qty) || 0,
+      unit: unit.trim(),
+      pack: pack.trim(),
+      od, urg,
+      st: "ordered",
+      created_at: TODAY,
+      walkIn: false, sourceA: false
+    });
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-10 px-4"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full shadow-xl",
+    style: {maxWidth: "460px"}
+  },
+    React.createElement("div", {className: "flex justify-between items-center mb-4"},
+      React.createElement("div", null,
+        React.createElement("h3", {className: "text-base font-semibold text-gray-900"}, "✏️ เพิ่มรายการสั่งซื้อ"),
+        React.createElement("p", {className: "text-xs text-gray-400 mt-0.5"}, "เพิ่มรายการยาหรือเวชภัณฑ์ใหม่")
+      ),
+      React.createElement("button", {onClick: onClose, className: "text-gray-400 hover:text-gray-600 text-xl leading-none"}, "×")
+    ),
+    React.createElement("div", {className: "flex flex-col gap-1"},
+      React.createElement("div", null,
+        React.createElement("label", {className: "text-xs font-medium text-gray-600 mb-1 block"}, "ชื่อยา/เวชภัณฑ์ *"),
+        React.createElement(DrugAutocomplete, {value: name, onChange: setName, placeholder: "พิมพ์หรือเลือกจากรายชื่อยา...", className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"})
+      ),
+      React.createElement("div", {className: "grid grid-cols-3 gap-2"},
+        React.createElement("div", null,
+          React.createElement("label", {className: "text-xs font-medium text-gray-600 mb-1 block"}, "จำนวน"),
+          React.createElement("input", {type: "number", value: qty, onChange: e => setQty(e.target.value), placeholder: "0", className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"})
+        ),
+        React.createElement("div", null,
+          React.createElement("label", {className: "text-xs font-medium text-gray-600 mb-1 block"}, "หน่วย"),
+          React.createElement("input", {value: unit, onChange: e => setUnit(e.target.value), placeholder: "เช่น กล่อง", className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"})
+        ),
+        React.createElement("div", null,
+          React.createElement("label", {className: "text-xs font-medium text-gray-600 mb-1 block"}, "ขนาดบรรจุ"),
+          React.createElement("input", {value: pack, onChange: e => setPack(e.target.value), placeholder: "เช่น 100 เม็ด", className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"})
+        )
+      ),
+      React.createElement("div", null,
+        React.createElement("label", {className: "text-xs font-medium text-gray-600 mb-1 block"}, "วันที่สั่งซื้อ"),
+        React.createElement("input", {type: "date", value: od, onChange: e => setOd(e.target.value), className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"})
+      ),
+      React.createElement("label", {className: "flex items-center gap-2 cursor-pointer"},
+        React.createElement("input", {type: "checkbox", checked: urg, onChange: e => setUrg(e.target.checked)}),
+        React.createElement("span", {className: "text-sm text-orange-600 font-medium"}, "⚡ เร่งด่วน")
+      )
+    ),
+    React.createElement("div", {className: "flex justify-end gap-2 mt-5"},
+      React.createElement("button", {onClick: onClose, className: "px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"}, "ยกเลิก"),
+      React.createElement("button", {
+        onClick: submit, disabled: saving,
+        className: "px-4 py-2 text-sm rounded-lg text-white " + (saving ? "bg-gray-400" : "bg-teal-700 hover:bg-teal-800")
+      }, saving ? "⏳ กำลังบันทึก..." : "✓ บันทึกรายการ")
+    )
+  ));
+}
+
+function AdminStatusModal({
+  item,
+  onClose,
+  onSave,
+  saving
+}) {
+  const SL2 = {ordered:"⏳ สั่งซื้อแล้ว",received:"📦 รับของแล้ว",inspected:"🔍 ตรวจรับแล้ว",entered:"✅ ลงใน INVs แล้ว"};
+  const ORDER = ["ordered","received","inspected","entered"];
+  const [newSt, setNewSt] = React.useState(item.st);
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4"
+  }, React.createElement("div", {
+    style: {background:"#fff",borderRadius:"16px",padding:"0",width:"100%",maxWidth:"400px",boxShadow:"0 20px 60px rgba(0,0,0,.2)",overflow:"hidden"}
+  },
+    React.createElement("div", {
+      style: {background:"linear-gradient(135deg,#92400e,#b45309)",padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}
+    },
+      React.createElement("div", null,
+        React.createElement("div", {style:{color:"#fff",fontWeight:"800",fontSize:"15px"}}, "🔐 Admin: ย้อนกระบวนการ"),
+        React.createElement("div", {style:{color:"#fde68a",fontSize:"11px",marginTop:"2px"}}, item.name)
+      ),
+      React.createElement("button", {onClick:onClose, style:{color:"rgba(255,255,255,.7)",background:"none",border:"none",fontSize:"20px",cursor:"pointer",lineHeight:"1"}}, "×")
+    ),
+    React.createElement("div", {style:{padding:"20px"}},
+      React.createElement("p", {style:{fontSize:"12px",color:"#6b7280",marginBottom:"12px"}},
+        "สถานะปัจจุบัน: ", React.createElement("strong", {style:{color:"#1a1a1a"}}, SL2[item.st]||item.st)
+      ),
+      React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:"8px"}},
+        ORDER.map(st => React.createElement("button", {
+          key: st,
+          onClick: () => setNewSt(st),
+          style: {
+            padding:"10px 14px",borderRadius:"8px",border:"2px solid",
+            borderColor: newSt===st ? "#d97706" : "#e5e7eb",
+            background: newSt===st ? "#fffbeb" : "#f9fafb",
+            color: newSt===st ? "#92400e" : "#374151",
+            fontWeight: newSt===st ? "700" : "500",
+            fontSize:"13px",cursor:"pointer",textAlign:"left",
+            display:"flex",alignItems:"center",gap:"8px",fontFamily:"inherit"
+          }
+        }, SL2[st], st===item.st && React.createElement("span",{style:{fontSize:"10px",color:"#6b7280",fontWeight:"400"}}," (ปัจจุบัน)")))
+      ),
+      newSt !== item.st && React.createElement("div", {
+        style:{marginTop:"12px",padding:"10px 14px",background:"#fef3c7",borderRadius:"8px",border:"1px solid #fde68a"}
+      },
+        React.createElement("p", {style:{fontSize:"11px",color:"#92400e",fontWeight:"600"}},
+          "⚠️ เปลี่ยน: ", SL2[item.st], " → ", SL2[newSt]
+        )
+      )
+    ),
+    React.createElement("div", {
+      style:{padding:"14px 20px",borderTop:"1px solid #e5e7eb",display:"flex",justifyContent:"flex-end",gap:"8px",background:"#f9fafb"}
+    },
+      React.createElement("button", {onClick:onClose, style:{padding:"8px 16px",borderRadius:"8px",border:"1.5px solid #e5e7eb",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}}, "ยกเลิก"),
+      React.createElement("button", {
+        onClick: () => {
+          if (newSt === item.st) return;
+          const stLabel2 = {ordered:"สั่งซื้อแล้ว",received:"รับของแล้ว",inspected:"ตรวจรับแล้ว",entered:"ลงใน INVs แล้ว"};
+          const willClear = [];
+          if (newSt === "ordered" && (item.rv || item.ins || item.en)) willClear.push("ข้อมูลรับของ, ตรวจรับ, ลงใน INVs");
+          else if (newSt === "received" && (item.ins || item.en)) willClear.push("ข้อมูลตรวจรับ, ลงใน INVs");
+          else if (newSt === "inspected" && item.en) willClear.push("ข้อมูลลงใน INVs");
+          const msg = willClear.length > 0
+            ? "ยืนยันเปลี่ยนสถานะ:\n" + (stLabel2[item.st]||item.st) + " → " + (stLabel2[newSt]||newSt) + "\n\n⚠️ ข้อมูลที่จะถูกลบออก:\n" + willClear.join("\n") + "\n\nข้อมูลเหล่านี้จะหายไปถาวร ยืนยันหรือไม่?"
+            : "ยืนยันเปลี่ยนสถานะ:\n" + (stLabel2[item.st]||item.st) + " → " + (stLabel2[newSt]||newSt) + "?";
+          if (window.confirm(msg)) onSave(item, newSt);
+        },
+        disabled: newSt === item.st || saving,
+        style:{
+          padding:"8px 16px",borderRadius:"8px",border:"none",fontSize:"13px",fontWeight:"700",cursor: newSt===item.st?"not-allowed":"pointer",fontFamily:"inherit",
+          background: newSt===item.st?"#e5e7eb":"linear-gradient(135deg,#d97706,#b45309)",
+          color: newSt===item.st?"#9ca3af":"#fff"
+        }
+      }, saving ? "⏳ กำลังบันทึก..." : "✓ บันทึกสถานะใหม่")
+    )
+  ));
+}
+
+function WalkInModal({
+  onClose,
+  onSave,
+  saving,
+  auth
+}) {
+  const [iName, setIName] = useState("");
+  const [iQty, setIQty] = useState("");
+  const [iUnit, setIUnit] = useState("");
+  const [who, setWho] = useState(auth && auth.displayName ? auth.displayName : "");
+  const [date, setDate] = useState(TODAY);
+  const [loc, setLoc] = useState("คลังยาใหญ่");
+  const [note, setNote] = useState("");
+  const submit = () => {
+    if (!iName.trim()) {
+      alert("กรุณาระบุชื่อยา/เวชภัณฑ์");
+      return;
+    }
+    onSave({
+      id: genId(),
+      name: "[นอกรายการ] " + iName.trim(),
+      qty: parseFloat(iQty) || 0,
+      unit: iUnit.trim(),
+      pack: "",
+      od: date,
+      urg: false,
+      st: "received",
+      rv: {
+        who: who.trim(),
+        date,
+        loc,
+        note: note.trim()
+      },
+      ins: null,
+      en: null,
+      created_at: TODAY,
+      walkIn: true
+    });
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "480px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-1"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "📦 รับของนอกรายการจัดซื้อ"), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-0.5"
+  }, "สำหรับรายการที่ไม่มีข้อมูลจัดซื้อในระบบ")), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600 text-lg"
+  }, "✕")), React.createElement("div", {
+    className: "bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4 text-xs text-amber-700"
+  }, "⚠️ รายการนี้จะเริ่มต้นที่ขั้นตอน \"รับของแล้ว\" โดยตรง"), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-600 border-b border-gray-100 pb-1"
+  }, "💊 ข้อมูลยา / เวชภัณฑ์"), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อยา / เวชภัณฑ์ * ", useDrugList().length > 0 && React.createElement("span", {
+    className: "text-teal-600 font-normal"
+  }, "(มีรายชื่อ ", useDrugList().length, " รายการ)")), React.createElement(DrugAutocomplete, {
+    value: iName,
+    onChange: setIName,
+    placeholder: "พิมพ์หรือเลือกจากรายชื่อยา...",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "จำนวนรับ"), React.createElement("input", {
+    type: "number",
+    value: iQty,
+    onChange: e => setIQty(e.target.value),
+    placeholder: "0",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หน่วย"), React.createElement("input", {
+    value: iUnit,
+    onChange: e => setIUnit(e.target.value),
+    placeholder: "เม็ด, ขวด, ถุง...",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }))), React.createElement("p", {
+    className: "text-xs font-medium text-gray-600 border-b border-gray-100 pb-1 pt-1"
+  }, "📦 ข้อมูลการรับของ"), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ผู้รับของ"), React.createElement("div", {
+    className: "flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-teal-50"
+  }, React.createElement("span", {
+    className: "text-sm font-medium text-teal-800 flex-1"
+  }, "👤 ", who || "(ไม่ระบุ)"), React.createElement("span", {
+    className: "text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full"
+  }, "จาก session"))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่รับของ"), React.createElement("input", {
+    type: "date",
+    value: date,
+    onChange: e => setDate(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "สถานที่เก็บยา"), React.createElement("select", {
+    value: loc,
+    onChange: e => setLoc(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }, React.createElement("option", {
+    value: "คลังยาใหญ่"
+  }, "คลังยาใหญ่ (default)"), React.createElement("option", {
+    value: "คลังยาย่อย"
+  }, "คลังยาย่อย"))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หมายเหตุ (ถ้ามี)"), React.createElement("textarea", {
+    value: note,
+    onChange: e => setNote(e.target.value),
+    rows: 2,
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none"
+  }))), React.createElement("div", {
+    className: "flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: submit,
+    disabled: saving,
+    className: "px-4 py-2 text-sm rounded-lg text-white " + (saving ? "bg-gray-400 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800")
+  }, saving ? "⏳ กำลังบันทึก..." : "✓ บันทึกรับของ"))));
+}
+function AddItemModal({
+  onClose,
+  onAdd,
+  saving
+}) {
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("");
+  const [pack, setPack] = useState("");
+  const [od, setOd] = useState(TODAY);
+  const [urg, setUrg] = useState(false);
+  const submit = () => {
+    if (!name.trim()) {
+      alert("กรุณาระบุชื่อยา/เวชภัณฑ์");
+      return;
+    }
+    onAdd({
+      id: genId(),
+      name: name.trim(),
+      qty: parseFloat(qty) || 0,
+      unit: unit.trim(),
+      pack: pack.trim(),
+      od,
+      urg,
+      st: "ordered",
+      rv: null,
+      ins: null,
+      en: null,
+      created_at: TODAY
+    });
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "480px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-5"
+  }, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "✏️ เพิ่มรายการสั่งซื้อ"), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ชื่อยา / เวชภัณฑ์ * ", useDrugList().length > 0 && React.createElement("span", {
+    className: "text-teal-600 font-normal"
+  }, "(มีรายชื่อ ", useDrugList().length, " รายการ)")), React.createElement(DrugAutocomplete, {
+    value: name,
+    onChange: setName,
+    placeholder: "พิมพ์หรือเลือกจากรายชื่อยา...",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "จำนวนสั่งซื้อ"), React.createElement("input", {
+    type: "number",
+    value: qty,
+    onChange: e => setQty(e.target.value),
+    placeholder: "0",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "หน่วย"), React.createElement("input", {
+    value: unit,
+    onChange: e => setUnit(e.target.value),
+    placeholder: "เม็ด, ขวด, ถุง...",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "ขนาดบรรจุ"), React.createElement("input", {
+    value: pack,
+    onChange: e => setPack(e.target.value),
+    placeholder: "เช่น 1000 เม็ด/ขวด",
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, "วันที่สั่งซื้อ"), React.createElement("input", {
+    type: "date",
+    value: od,
+    onChange: e => setOd(e.target.value),
+    className: "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+  })), React.createElement("label", {
+    className: "flex items-center gap-2 cursor-pointer"
+  }, React.createElement("input", {
+    type: "checkbox",
+    checked: urg,
+    onChange: e => setUrg(e.target.checked),
+    className: "w-4 h-4 accent-teal-600"
+  }), React.createElement("span", {
+    className: "text-sm"
+  }, "⚡ รายการเร่งด่วน"))), React.createElement("div", {
+    className: "flex justify-end gap-2 mt-5 pt-4 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: submit,
+    disabled: saving,
+    className: "px-4 py-2 text-sm rounded-lg text-white " + (saving ? "bg-gray-400 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800")
+  }, saving ? "⏳ กำลังบันทึก..." : "✓ เพิ่มรายการ"))));
+}
+function UploadModal({
+  onClose,
+  onImport,
+  saving
+}) {
+  const fileRef = useRef();
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [colMap, setColMap] = useState({
+    name: "",
+    qty: "",
+    unit: "",
+    pack: "",
+    od: "",
+    urg: ""
+  });
+  const [headers, setHeaders] = useState([]);
+  const [rawRows, setRawRows] = useState([]);
+  const urgVals = ["ใช่", "yes", "true", "1", "ด่วน", "urgent", "x", "✓", "เร่งด่วน"];
+  const readFile = file => {
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "csv"].includes(ext)) {
+      alert("กรุณาเลือกไฟล์ .xlsx, .xls หรือ .csv");
+      return;
+    }
+    setFileName(file.name);
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), {
+          type: "array",
+          cellDates: true
+        });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {
+          header: 1,
+          defval: "",
+          raw: false
+        });
+        if (!rows || rows.length < 2) {
+          alert("ไม่พบข้อมูลในไฟล์");
+          setLoading(false);
+          return;
+        }
+        const hdr = rows[0].map(h => String(h || "").trim());
+        setHeaders(hdr);
+        setRawRows(rows);
+        const auto = {
+          name: "",
+          qty: "",
+          unit: "",
+          pack: "",
+          od: "",
+          urg: ""
+        };
+        const maps = {
+          name: ["ชื่อยา", "รายการยา", "ยา", "drug", "name", "item", "รายการ", "ชื่อ", "เวชภัณฑ์"],
+          qty: ["จำนวน", "qty", "quantity", "amount", "จำนวนสั่งซื้อ"],
+          unit: ["หน่วย", "unit", "units"],
+          pack: ["ขนาดบรรจุ", "บรรจุ", "pack", "package", "ขนาด", "size"],
+          od: ["วันที่สั่งซื้อ", "วันที่", "date", "order date", "วันสั่ง"],
+          urg: ["เร่งด่วน", "urgent", "urgency", "ด่วน", "priority"]
+        };
+        hdr.forEach(h => {
+          const hl = h.toLowerCase();
+          Object.keys(maps).forEach(k => {
+            if (!auto[k] && maps[k].some(m => hl.includes(m.toLowerCase()))) auto[k] = h;
+          });
+        });
+        setColMap(auto);
+        setStep(2);
+        setLoading(false);
+      } catch (err) {
+        alert("อ่านไฟล์ไม่ได้: " + err.message);
+        setLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  const previewItems = React.useMemo(() => {
+    if (!rawRows.length || !colMap.name) return [];
+    const hdr = rawRows[0];
+    const ci = {};
+    Object.keys(colMap).forEach(k => {
+      ci[k] = hdr.findIndex(h => h === colMap[k]);
+    });
+    return rawRows.slice(1).filter(r => r[ci.name] && String(r[ci.name]).trim()).slice(0, 5).map(r => ({
+      name: String(r[ci.name] || "").trim(),
+      qty: ci.qty >= 0 ? parseFloat(r[ci.qty]) || 0 : 0,
+      unit: ci.unit >= 0 ? String(r[ci.unit] || "").trim() : "",
+      pack: ci.pack >= 0 ? String(r[ci.pack] || "").trim() : "",
+      od: ci.od >= 0 ? excelDate(r[ci.od]) : TODAY,
+      urg: ci.urg >= 0 ? urgVals.includes(String(r[ci.urg] || "").trim().toLowerCase()) : false
+    }));
+  }, [rawRows, colMap]);
+  const doImport = () => {
+    const hdr = rawRows[0];
+    const ci = {};
+    Object.keys(colMap).forEach(k => {
+      ci[k] = hdr.findIndex(h => h === colMap[k]);
+    });
+    if (ci.name < 0) {
+      alert("กรุณาเลือกคอลัมน์ชื่อยา");
+      return;
+    }
+    const items = rawRows.slice(1).filter(r => r[ci.name] && String(r[ci.name]).trim()).map(r => ({
+      id: genId(),
+      name: String(r[ci.name] || "").trim(),
+      qty: ci.qty >= 0 ? parseFloat(r[ci.qty]) || 0 : 0,
+      unit: ci.unit >= 0 ? String(r[ci.unit] || "").trim() : "",
+      pack: ci.pack >= 0 ? String(r[ci.pack] || "").trim() : "",
+      od: ci.od >= 0 ? excelDate(r[ci.od]) : TODAY,
+      urg: ci.urg >= 0 ? urgVals.includes(String(r[ci.urg] || "").trim().toLowerCase()) : false,
+      st: "ordered",
+      rv: null,
+      ins: null,
+      en: null,
+      created_at: TODAY
+    }));
+    onImport(items, fileName);
+  };
+  const CS = ({
+    label,
+    field,
+    req
+  }) => React.createElement("div", null, React.createElement("label", {
+    className: "text-xs text-gray-500 block mb-0.5"
+  }, label, req && React.createElement("span", {
+    className: "text-red-500 ml-0.5"
+  }, "*")), React.createElement("select", {
+    value: colMap[field],
+    onChange: e => setColMap(p => ({
+      ...p,
+      [field]: e.target.value
+    })),
+    className: "w-full border rounded-lg px-2.5 py-1.5 text-sm " + (req && !colMap[field] ? "border-red-300 bg-red-50" : "border-gray-200")
+  }, React.createElement("option", {
+    value: ""
+  }, "— ไม่เลือก —"), headers.map(h => React.createElement("option", {
+    key: h,
+    value: h
+  }, h))));
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "580px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-5"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "⬆️ นำเข้าไฟล์จัดซื้อ"), step === 2 && React.createElement("p", {
+    className: "text-xs text-gray-400 mt-0.5"
+  }, "📄 ", fileName)), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), step === 1 && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer mb-4 " + (dragging ? "border-teal-500 bg-teal-50" : "border-gray-300 hover:border-teal-400 hover:bg-teal-50"),
+    onClick: () => fileRef.current.click(),
+    onDragOver: e => {
+      e.preventDefault();
+      setDragging(true);
+    },
+    onDragLeave: () => setDragging(false),
+    onDrop: e => {
+      e.preventDefault();
+      setDragging(false);
+      if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    }
+  }, loading ? React.createElement("div", {
+    className: "text-gray-400"
+  }, React.createElement("div", {
+    className: "text-3xl mb-2"
+  }, "⏳"), React.createElement("p", {
+    className: "text-sm"
+  }, "กำลังอ่านไฟล์...")) : React.createElement("div", null, React.createElement("div", {
+    className: "text-4xl mb-3"
+  }, "📂"), React.createElement("p", {
+    className: "text-sm font-medium text-gray-600"
+  }, "คลิกเพื่อเลือกไฟล์ หรือลากมาวาง"), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-1"
+  }, "รองรับ .xlsx, .xls, .csv"))), React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: ".xlsx,.xls,.csv",
+    className: "hidden",
+    onChange: e => {
+      if (e.target.files[0]) readFile(e.target.files[0]);
+    }
+  }), React.createElement("div", {
+    className: "bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800"
+  }, React.createElement("p", {
+    className: "font-medium mb-1"
+  }, "📋 รูปแบบหัวคอลัมน์ที่แนะนำ"), React.createElement("p", {
+    className: "font-mono bg-white border border-blue-200 rounded px-2 py-1 mt-1"
+  }, "ชื่อยา | จำนวน | หน่วย | ขนาดบรรจุ | วันที่สั่งซื้อ | เร่งด่วน"))), step === 2 && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-700 mb-2"
+  }, "🔗 จับคู่คอลัมน์จากไฟล์"), React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, React.createElement(CS, {
+    label: "ชื่อยา / เวชภัณฑ์",
+    field: "name",
+    req: true
+  }), React.createElement(CS, {
+    label: "จำนวนสั่งซื้อ",
+    field: "qty"
+  }), React.createElement(CS, {
+    label: "หน่วย",
+    field: "unit"
+  }), React.createElement(CS, {
+    label: "ขนาดบรรจุ",
+    field: "pack"
+  }), React.createElement(CS, {
+    label: "วันที่สั่งซื้อ",
+    field: "od"
+  }), React.createElement(CS, {
+    label: "เร่งด่วน (ใช่/ไม่ใช่)",
+    field: "urg"
+  }))), previewItems.length > 0 && React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-700 mb-2"
+  }, "👁️ ตัวอย่างข้อมูล (5 แถวแรก)"), React.createElement("div", {
+    className: "border border-gray-200 rounded-xl overflow-hidden"
+  }, React.createElement("div", {
+    className: "overflow-x-auto"
+  }, React.createElement("table", {
+    className: "w-full text-xs"
+  }, React.createElement("thead", {
+    className: "bg-gray-50 border-b border-gray-200"
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "ชื่อยา"), React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "จำนวน"), React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "หน่วย"), React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "ขนาดบรรจุ"), React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "วันที่"), React.createElement("th", {
+    className: "px-2 py-2 text-left text-gray-500"
+  }, "เร่งด่วน"))), React.createElement("tbody", null, previewItems.map((r, i) => React.createElement("tr", {
+    key: i,
+    className: "border-b border-gray-100 last:border-0"
+  }, React.createElement("td", {
+    className: "px-2 py-1.5 font-medium"
+  }, r.name), React.createElement("td", {
+    className: "px-2 py-1.5 text-gray-600"
+  }, r.qty), React.createElement("td", {
+    className: "px-2 py-1.5 text-gray-600"
+  }, r.unit || "—"), React.createElement("td", {
+    className: "px-2 py-1.5 text-gray-600"
+  }, r.pack || "—"), React.createElement("td", {
+    className: "px-2 py-1.5 text-gray-600"
+  }, r.od), React.createElement("td", {
+    className: "px-2 py-1.5"
+  }, r.urg ? React.createElement("span", {
+    className: "text-orange-600"
+  }, "⚡ ใช่") : React.createElement("span", {
+    className: "text-gray-400"
+  }, "ไม่ใช่"))))))))), React.createElement("div", {
+    className: "flex justify-between items-center pt-4 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: () => {
+      setStep(1);
+      setFileName("");
+      setHeaders([]);
+      setRawRows([]);
+    },
+    className: "px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
+  }, "← เลือกไฟล์ใหม่"), React.createElement("div", {
+    className: "flex gap-2"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: doImport,
+    disabled: !colMap.name || saving,
+    className: "px-4 py-2 text-sm rounded-lg text-white " + (!colMap.name || saving ? "bg-gray-300 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800")
+  }, saving ? "⏳ กำลังบันทึก..." : "⬆️ นำเข้าข้อมูล"))))));
+}
+function ExportModal({
+  data,
+  onClose,
+  onToast
+}) {
+  const [expType, setExpType] = useState("detail");
+  const [selSt, setSelSt] = useState({
+    ordered: true,
+    received: true,
+    inspected: true,
+    entered: true
+  });
+  const filtered = (() => {
+    let f = data.filter(x => selSt[x.st]);
+    if (expType === "urgent") f = f.filter(x => x.urg);
+    if (expType === "pending") f = f.filter(x => x.st !== "entered");
+    return f;
+  })();
+  const doExport = () => {
+    const H = ["ลำดับ", "ชื่อยา/เวชภัณฑ์", "จำนวน", "หน่วย", "ขนาดบรรจุ", "วันที่สั่งซื้อ", "เร่งด่วน", "สถานะ", "ผู้รับของ", "วันที่รับ", "สถานที่เก็บ", "หมายเหตุ-รับของ", "วันที่ตรวจรับ", "หมายเหตุ-ตรวจรับ", "ผู้ลง INVs", "วันที่ลง INVs", "หมายเหตุ-ลง INVs"];
+    const R = filtered.map((x, i) => [i + 1, x.name, x.qty, x.unit, x.pack || "", x.od, x.urg ? "ใช่" : "ไม่ใช่", SL[x.st], x.rv && x.rv.who ? x.rv.who : "", x.rv && x.rv.date ? x.rv.date : "", x.rv && x.rv.loc ? x.rv.loc : "", x.rv && x.rv.note ? x.rv.note : "", x.ins && x.ins.date ? x.ins.date : "", x.ins && x.ins.note ? x.ins.note : "", x.en && x.en.who ? x.en.who : "", x.en && x.en.date ? x.en.date : "", x.en && x.en.note ? x.en.note : ""]);
+    const csv = "\uFEFF" + [H, ...R].map(r => r.map(v => {
+      const s = String(v).replace(/[\x22]/g, "\x22\x22");
+      return "\x22" + s + "\x22";
+    }).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {
+      type: "text/csv;charset=utf-8"
+    }));
+    a.download = "pharmacy_report_" + TODAY + ".csv";
+    a.click();
+    onClose();
+    onToast("Export สำเร็จ", "บันทึกไฟล์ pharmacy_report_" + TODAY + ".csv (" + filtered.length + " รายการ)", "success");
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "480px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-5"
+  }, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "⬇️ Export รายงาน"), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("p", {
+    className: "text-xs text-gray-500 font-medium mb-2"
+  }, "เลือกรูปแบบ"), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mb-4"
+  }, [{
+    k: "detail",
+    i: "📋",
+    t: "รายละเอียดครบถ้วน",
+    d: "ทุกขั้นตอน"
+  }, {
+    k: "summary",
+    i: "📊",
+    t: "สรุปภาพรวม",
+    d: "จำนวนแต่ละสถานะ"
+  }, {
+    k: "urgent",
+    i: "⚡",
+    t: "รายการเร่งด่วน",
+    d: "เฉพาะ flag เร่งด่วน"
+  }, {
+    k: "pending",
+    i: "⏰",
+    t: "รายการค้างดำเนินการ",
+    d: "ยังไม่ครบทุกขั้นตอน"
+  }].map(c => React.createElement("button", {
+    key: c.k,
+    onClick: () => setExpType(c.k),
+    className: "text-left border rounded-xl p-3 " + (expType === c.k ? "border-teal-500 bg-teal-50 border-2" : "border-gray-200 hover:bg-gray-50")
+  }, React.createElement("div", {
+    className: "text-lg mb-1"
+  }, c.i), React.createElement("div", {
+    className: "text-xs font-medium"
+  }, c.t), React.createElement("div", {
+    className: "text-xs text-gray-400"
+  }, c.d)))), React.createElement("p", {
+    className: "text-xs text-gray-500 font-medium mb-2"
+  }, "กรองตามสถานะ"), React.createElement("div", {
+    className: "flex flex-wrap gap-2 mb-5"
+  }, Object.keys(selSt).map(s => React.createElement("button", {
+    key: s,
+    onClick: () => setSelSt(p => ({
+      ...p,
+      [s]: !p[s]
+    })),
+    className: "px-3 py-1 rounded-full text-xs border " + (selSt[s] ? "bg-teal-50 text-teal-700 border-teal-400" : "bg-white text-gray-400 border-gray-200")
+  }, SL[s]))), React.createElement("div", {
+    className: "bg-gray-50 rounded-xl p-3 mb-4 text-xs"
+  }, [["จำนวนที่จะ Export", filtered.length + " รายการ"], ["รายการเร่งด่วน", filtered.filter(x => x.urg).length + " รายการ"], ["เสร็จสมบูรณ์", filtered.filter(x => x.st === "entered").length + " รายการ"]].map(([k, v]) => React.createElement("div", {
+    key: k,
+    className: "flex justify-between py-1 border-b border-gray-200 last:border-0"
+  }, React.createElement("span", {
+    className: "text-gray-500"
+  }, k), React.createElement("span", {
+    className: "font-medium"
+  }, v)))), React.createElement("div", {
+    className: "flex justify-end gap-2"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ยกเลิก"), React.createElement("button", {
+    onClick: doExport,
+    className: "px-4 py-2 text-sm bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "⬇️ ดาวน์โหลด CSV"))));
+}
+function AlertSettingsModal({
+  urgItems,
+  onClose,
+  onToast
+}) {
+  const [s, setS] = useState({
+    urgent: true,
+    status: true,
+    overdue: true,
+    line: false
+  });
+  const tog = k => setS(p => ({
+    ...p,
+    [k]: !p[k]
+  }));
+  return React.createElement("div", {
+    className: "fixed inset-0 bg-black bg-opacity-40 z-40 flex items-start justify-center pt-6 px-4 overflow-y-auto"
+  }, React.createElement("div", {
+    className: "bg-white rounded-2xl border border-gray-200 p-6 w-full mb-6",
+    style: {
+      maxWidth: "480px"
+    }
+  }, React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, React.createElement("h3", {
+    className: "text-base font-medium"
+  }, "🔔 ตั้งค่าการแจ้งเตือน"), React.createElement("button", {
+    onClick: onClose,
+    className: "text-gray-400 hover:text-gray-600"
+  }, "✕")), React.createElement("div", {
+    className: "bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs text-blue-800 mb-4"
+  }, "ℹ️ ระบบจะแจ้งเตือนอัตโนมัติเมื่อมีรายการเร่งด่วนค้างดำเนินการ"), [{
+    k: "urgent",
+    l: "แจ้งเตือนรายการเร่งด่วนค้างดำเนินการ",
+    s: "แสดง banner เตือนเมื่อเปิดระบบ"
+  }, {
+    k: "status",
+    l: "แจ้งเตือนเมื่อสถานะเปลี่ยน",
+    s: "แสดง pop-up เมื่อบันทึกสำเร็จ"
+  }, {
+    k: "overdue",
+    l: "แจ้งเตือนรายการค้างรับของเกิน 3 วัน",
+    s: "รายการสั่งซื้อแล้วแต่ยังไม่รับของ"
+  }, {
+    k: "line",
+    l: "แจ้งเตือนผ่าน Line Notify",
+    s: "ส่งข้อความไปยังกลุ่ม Line"
+  }].map(r => React.createElement("div", {
+    key: r.k,
+    className: "flex items-center justify-between py-3 border-b border-gray-100"
+  }, React.createElement("div", null, React.createElement("p", {
+    className: "text-sm"
+  }, r.l), React.createElement("p", {
+    className: "text-xs text-gray-400 mt-0.5"
+  }, r.s)), React.createElement("button", {
+    onClick: () => tog(r.k),
+    className: "w-10 h-5 rounded-full relative flex-shrink-0 ml-4 " + (s[r.k] ? "bg-teal-500" : "bg-gray-300")
+  }, React.createElement("span", {
+    className: "absolute w-4 h-4 bg-white rounded-full top-0.5 transition-all " + (s[r.k] ? "left-5" : "left-0.5")
+  })))), React.createElement("p", {
+    className: "text-xs font-medium mt-4 mb-2"
+  }, "รายการเร่งด่วนที่แจ้งเตือนขณะนี้"), urgItems.length ? urgItems.map(x => React.createElement("div", {
+    key: x.id,
+    className: "flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-3 py-1.5 mb-1.5"
+  }, React.createElement("span", {
+    className: "text-sm font-medium text-orange-900"
+  }, "⚡ ", x.name), React.createElement("span", {
+    className: "text-xs text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full"
+  }, ns(x)))) : React.createElement("p", {
+    className: "text-sm text-gray-400 text-center py-4"
+  }, "ไม่มีรายการเร่งด่วนค้างดำเนินการ ✅"), React.createElement("div", {
+    className: "flex justify-end gap-2 pt-4 mt-3 border-t border-gray-100"
+  }, React.createElement("button", {
+    onClick: onClose,
+    className: "px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+  }, "ปิด"), React.createElement("button", {
+    onClick: () => {
+      onClose();
+      onToast("บันทึกการตั้งค่าแล้ว", "ตั้งค่าการแจ้งเตือนเรียบร้อย", "success");
+    },
+    className: "px-4 py-2 text-sm bg-teal-700 text-white rounded-lg hover:bg-teal-800"
+  }, "✓ บันทึก"))));
+}
+function App() {
+  const [auth, setAuth2] = useState(() => getAuth());
+  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem(GAS_URL_KEY) || "");
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+  const [syncErr, setSyncErr] = useState(false);
+  const [tab, setTab] = useState("all");
+  const [showUrgent, setShowUrgent] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterLoc, setFilterLoc] = useState("all");
+  const [statusItem, setStatusItem] = useState(null);
+  const [dateFilter, setDateFilter] = useState({
+    field: "od",
+    from: "",
+    to: "",
+    active: false
+  });
+  const [detailItem, setDetailItem] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [showExport, setShowExport] = useState(false);
+  const [showAlertSet, setShowAlertSet] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [showWalkIn, setShowWalkIn] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [drugList, setDrugList] = useState([]);
+  const [showDrugUpload, setShowDrugUpload] = useState(false);
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [showAdminUsers, setShowAdminUsers] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const pollRef = useRef(null);
+  const addToast = useCallback((title, body, type) => {
+    const id = Date.now();
+    setToasts(p => [...p, {
+      id,
+      title,
+      body,
+      type: type || "info"
+    }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 5000);
+  }, []);
+  const removeToast = id => setToasts(p => p.filter(t => t.id !== id));
+  const fetchDrugList = useCallback(async () => {
+    const url = gasUrl || localStorage.getItem(GAS_URL_KEY) || "";
+    if (!url) return;
+    try {
+      const res = await apiPost(url, {
+        action: "getDrugList"
+      });
+      if (res.ok && res.drugs && res.drugs.length > 0) {
+        setDrugList(res.drugs);
+      }
+    } catch (e) {}
+  }, [gasUrl]);
+  const fetchData = useCallback(async silent => {
+    if (!gasUrl) return;
+    if (!silent) setLoading(true);
+    try {
+      const res = await apiGet(gasUrl);
+      if (res.ok) {
+        setData(res.items || []);
+        setLastSync(new Date());
+        setSyncErr(false);
+      } else {
+        setSyncErr(true);
+        if (!silent) addToast("ดึงข้อมูลไม่สำเร็จ", res.error || "GAS ตอบกลับแต่มี error", "error");
+      }
+    } catch (e) {
+      setSyncErr(true);
+      if (!silent) {
+        addToast("เชื่อมต่อไม่สำเร็จ", (e.message || "Failed to fetch") + " — ตรวจสอบ Deploy settings", "error");
+      }
+    }
+    if (!silent) setLoading(false);
+  }, [gasUrl]);
+  useEffect(() => {
+    if (!gasUrl) return;
+    fetchData();
+    fetchDrugList();
+    pollRef.current = setInterval(() => fetchData(true), POLL_MS);
+    const drugPoll = setInterval(() => fetchDrugList(), 300000);
+    return () => {
+      clearInterval(pollRef.current);
+      clearInterval(drugPoll);
+    };
+  }, [gasUrl, fetchData, fetchDrugList]);
+  const saveItem = async item => {
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "updateItem",
+        item
+      });
+      if (res.ok) {
+        setData(p => p.map(x => x.id === item.id ? item : x));
+        setDetailItem(null); // ปิด modal ทันทีหลังบันทึก ป้องกันบันทึกซ้ำขั้นถัดไป
+        const stLabel = {ordered:"สั่งซื้อแล้ว",received:"รับของแล้ว",inspected:"ตรวจรับแล้ว",entered:"ลงใน INVs แล้ว"};
+        addToast("บันทึกสำเร็จ", "สถานะ: " + (stLabel[item.st] || item.st), "success");
+      } else addToast("เกิดข้อผิดพลาด", res.error || "บันทึกไม่ได้", "error");
+    } catch (e) {
+      addToast("เชื่อมต่อไม่ได้", "กรุณาตรวจสอบการเชื่อมต่อ", "error");
+    }
+    setSaving(false);
+  };
+  const toggleUrg = async (id, newUrg) => {
+    const x = data.find(d => d.id === id);
+    if (!x) return;
+    const updated = {
+      ...x,
+      urg: newUrg
+    };
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "updateItem",
+        item: updated
+      });
+      if (res.ok) {
+        setData(p => p.map(d => d.id === id ? updated : d));
+        if (detailItem && detailItem.id === id) setDetailItem(updated);
+        addToast(newUrg ? "ตั้งเป็นเร่งด่วน ⚡" : "เปลี่ยนเป็นปกติ", x.name, "success");
+      } else addToast("เกิดข้อผิดพลาด", res.error || "บันทึกไม่ได้", "error");
+    } catch (e) {
+      addToast("เชื่อมต่อไม่ได้", "กรุณาตรวจสอบการเชื่อมต่อ", "error");
+    }
+    setSaving(false);
+  };
+  const proceedDeleteItem = async (id, name) => {
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "deleteItem",
+        id
+      });
+      if (res.ok) {
+        setData(p => p.filter(d => d.id !== id));
+        addToast("ลบรายการสำเร็จ", name + " — ลบออกจากระบบแล้ว", "success");
+      } else addToast("เกิดข้อผิดพลาด", res.error || "ลบไม่สำเร็จ", "error");
+    } catch (e) {
+      addToast("เชื่อมต่อไม่ได้", "กรุณาตรวจสอบการเชื่อมต่อ", "error");
+    }
+    setSaving(false);
+  };
+  const deleteItem = id => {
+    const x = data.find(d => d.id === id);
+    if (!x) return;
+    if (!canEdit(auth) && x.st !== "ordered") {
+      addToast("ไม่สามารถลบได้", "ลบได้เฉพาะรายการที่อยู่ในสถานะ 'สั่งซื้อแล้ว' เท่านั้น", "error");
+      return;
+    }
+    setConfirmDialog({
+      title: "🗑️ ยืนยันลบรายการ",
+      message: x.name + "\n\nรายการนี้จะถูกลบออกจากระบบถาวร ไม่สามารถกู้คืนได้" + (x.st !== "ordered" ? "\n⚠️ รายการนี้ผ่านกระบวนการไปแล้ว กรุณาตรวจสอบก่อนลบ" : ""),
+      onConfirm: () => {
+        setConfirmDialog(null);
+        proceedDeleteItem(id, x.name);
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+  const handleStatusChange = async (item, newSt) => {
+    // clear data ตามกระบวนการที่เลือกย้อนกลับ
+    let updated = { ...item, st: newSt };
+    if (newSt === "ordered") {
+      // ย้อนกลับไป ordered → clear rv, ins, en ทั้งหมด
+      updated = { ...updated, rv: null, ins: null, en: null };
+    } else if (newSt === "received") {
+      // ย้อนกลับไป received → clear ins, en
+      updated = { ...updated, ins: null, en: null };
+    } else if (newSt === "inspected") {
+      // ย้อนกลับไป inspected → clear en
+      updated = { ...updated, en: null };
+    }
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, { action: "updateItem", item: updated });
+      if (res.ok) {
+        setData(p => p.map(x => x.id === item.id ? updated : x));
+        setStatusItem(null);
+        setTab(newSt);
+        const stLabel = {ordered:"สั่งซื้อแล้ว",received:"รับของแล้ว",inspected:"ตรวจรับแล้ว",entered:"ลงใน INVs แล้ว"};
+        addToast("เปลี่ยนสถานะสำเร็จ", item.name + " → " + (stLabel[newSt]||newSt), "success");
+      } else {
+        addToast("เกิดข้อผิดพลาด", res.error||"บันทึกไม่ได้", "error");
+      }
+    } catch(e) {
+      addToast("เชื่อมต่อไม่ได้", e.message, "error");
+    }
+    setSaving(false);
+  };
+  const handleEditSave = async updated => {
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "updateItem",
+        item: updated
+      });
+      if (res.ok) {
+        const originalSt = editItem ? editItem.st : null;
+        setData(p => p.map(x => x.id === updated.id ? updated : x));
+        setEditItem(null);
+        // ถ้า admin เปลี่ยน status → switch tab ไปยัง status ใหม่อัตโนมัติ
+        if (updated.st && updated.st !== originalSt) {
+          setTab(updated.st);
+        }
+        const stLabel = {ordered:"สั่งซื้อแล้ว",received:"รับของแล้ว",inspected:"ตรวจรับแล้ว",entered:"ลงใน INVs แล้ว"};
+        addToast("แก้ไขสำเร็จ", updated.name + " — สถานะ: " + (stLabel[updated.st] || updated.st), "success");
+      } else addToast("เกิดข้อผิดพลาด", res.error || "บันทึกไม่ได้", "error");
+    } catch (e) {
+      addToast("เชื่อมต่อไม่ได้", "กรุณาตรวจสอบการเชื่อมต่อ", "error");
+    }
+    setSaving(false);
+  };
+  const proceedAddItems = async (deduped, skipped, label) => {
+    const skipMsg = skipped.length > 0 ? " (ข้ามซ้ำ " + skipped.length + " รายการ)" : "";
+    setSaving(true);
+    try {
+      const res = await apiPost(gasUrl, {
+        action: "addItems",
+        items: deduped
+      });
+      if (res.ok) {
+        await fetchData(true);
+        setShowUpload(false);
+        setShowAddItem(false);
+        setShowWalkIn(false);
+        setBannerDismissed(false);
+        addToast("นำเข้าสำเร็จ", label + " — บันทึก " + res.added + " รายการ" + skipMsg, "success");
+      } else addToast("เกิดข้อผิดพลาด", res.error || "บันทึกไม่ได้", "error");
+    } catch (e) {
+      addToast("เชื่อมต่อไม่ได้", "กรุณาตรวจสอบการเชื่อมต่อ", "error");
+    }
+    setSaving(false);
+  };
+  const handleAddItems = async (items, label) => {
+    const existingKeys = new Set(data.map(dupKey));
+    const deduped = [];
+    const skipped = [];
+    items.forEach(item => {
+      const k = dupKey(item);
+      if (existingKeys.has(k)) skipped.push(item.name);else {
+        existingKeys.add(k);
+        deduped.push(item);
+      }
+    });
+    if (skipped.length > 0 && deduped.length === 0) {
+      addToast("ข้อมูลซ้ำทั้งหมด", "พบ " + skipped.length + " รายการที่มีอยู่แล้ว ไม่มีรายการใหม่", "error");
+      return;
+    }
+    const incompleteNames = new Set(data.filter(x => x.st !== "entered").map(x => String(x.name || "").trim().toLowerCase()));
+    const nameHits = deduped.filter(item => incompleteNames.has(String(item.name || "").trim().toLowerCase()));
+    if (nameHits.length > 0) {
+      const nameList = nameHits.map(x => x.name).slice(0, 5).join("\n• ");
+      setConfirmDialog({
+        title: "⚠️ พบรายการสั่งซื้อซ้ำ",
+        message: "ชื่อยาต่อไปนี้มีอยู่ในระบบแล้วและยังดำเนินการไม่ครบ:\n\n• " + nameList + "\n\nต้องการบันทึกรายการนี้ต่อหรือไม่?",
+        onConfirm: () => {
+          setConfirmDialog(null);
+          proceedAddItems(deduped, skipped, label);
+        },
+        onCancel: () => setConfirmDialog(null)
+      });
+      return;
+    }
+    proceedAddItems(deduped, skipped, label);
+  };
+  const pendingUrg = data.filter(x => x.urg && x.st !== "entered");
+  const getDateByField = (x, field) => {
+    if (field === "od") return x.od || "";
+    if (field === "rv") return x.rv && x.rv.date ? x.rv.date : "";
+    if (field === "ins") return x.ins && x.ins.date ? x.ins.date : "";
+    if (field === "en") return x.en && x.en.date ? x.en.date : "";
+    return "";
+  };
+  const filtered = data.filter(x => {
+    if (showUrgent && !x.urg) return false;
+    if (tab === "walkin") return !!x.walkIn;
+    if (tab !== "all" && x.st !== tab) return false;
+    if (search && !(x.name || "").toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterLoc !== "all" && x.rv) {
+      const loc = (x.rv.loc || "").trim();
+      if (filterLoc !== loc) return false;
+    }
+    if (dateFilter.active && (dateFilter.from || dateFilter.to)) {
+      const raw = getDateByField(x, dateFilter.field);
+      if (!raw) return false;
+      const toISO = s => {
+        if (!s) return "";
+        const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return m[3] + "-" + m[2] + "-" + m[1];
+        return s;
+      };
+      const d = toISO(raw);
+      if (dateFilter.from && d < dateFilter.from) return false;
+      if (dateFilter.to && d > dateFilter.to) return false;
+    }
+    return true;
+  });
+  const stats = {
+    total: data.length,
+    ordered: data.filter(x => x.st === "ordered").length,
+    received: data.filter(x => x.st === "received").length,
+    inspected: data.filter(x => x.st === "inspected").length,
+    entered: data.filter(x => x.st === "entered").length,
+    urgPending: pendingUrg.length
+  };
+  if (!auth) return React.createElement(LoginModal, {
+    onLogin: u => {
+      setAuth2(u);
+      setGasUrl(localStorage.getItem(GAS_URL_KEY) || "");
+    }
+  });
+  if (!gasUrl) return React.createElement(SetupModal, {
+    onSave: u => setGasUrl(u)
+  });
+  return React.createElement(DrugListCtx.Provider, {
+    value: drugList
+  }, React.createElement("div", {
+    className: "min-h-screen",
+    style: {
+      background: "#f2f7f4"
+    }
+  }, React.createElement(Toasts, {
+    list: toasts,
+    onRemove: removeToast
+  }), React.createElement("div", {
+    className: "p-4 mx-auto",
+    style: {
+      maxWidth: "1400px"
+    }
+  }, React.createElement("div", {
+    className: "mf-topbar"
+  }, React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement("div", {className: "mf-logo-wrap"},
+    React.createElement("img", {
+      src: "data:image/png;base64,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",
+      alt: "MedFlow",
+      className: "mf-logo-img"
+    }),
+    React.createElement("div", null,
+      React.createElement("div", {className: "mf-logo-name-row"},
+        React.createElement("span", {className: "mf-project-name"}, "MedFlow"),
+        auth && auth.role === "admin" && React.createElement("span", {className: "mf-admin-badge"}, "Admin")
+      ),
+      React.createElement("div", {className: "mf-status-row"},
+        syncErr
+          ? React.createElement("span", {className: "mf-status-err"},
+              React.createElement("span", {className: "mf-status-dot mf-dot-err"}), "เชื่อมต่อไม่ได้")
+          : React.createElement("span", {className: "mf-status-ok"},
+              React.createElement("span", {className: "mf-status-dot mf-dot-ok"}),
+              "เชื่อมต่อแล้ว · ",
+              lastSync ? lastSync.toLocaleTimeString("th-TH", {hour:"2-digit",minute:"2-digit"}) : "—"),
+        React.createElement("button", {onClick: () => fetchData(), className: "mf-refresh-btn"}, "↻")
+      )
+    )
+  )), React.createElement("div", {
+    className: "ph-header-btns"
+  }, React.createElement("button", {
+    onClick: () => setShowExport(true),
+    className: "ph-btn ph-btn-outline"
+  }, "⬇️ Export"), React.createElement("button", {
+    onClick: () => setShowAlertSet(true),
+    className: "ph-btn ph-btn-outline relative"
+  }, "🔔 แจ้งเตือน", stats.urgPending > 0 && React.createElement("span", {
+    className: "absolute bg-orange-500 text-white rounded-full text-xs flex items-center justify-center font-medium",
+    style: {
+      width: "17px",
+      height: "17px",
+      top: "-6px",
+      right: "-6px"
+    }
+  }, stats.urgPending)), React.createElement("button", {
+    onClick: () => setShowDrugUpload(true),
+    className: "ph-btn ph-btn-outline",
+    title: "อัปโหลดรายชื่อยาสำหรับ autocomplete"
+  }, "📋 นำเข้ารายชื่อยา", drugList.length > 0 && React.createElement("span", {
+    className: "ml-1 text-xs bg-teal-100 text-teal-700 px-1.5 rounded-full"
+  }, drugList.length)), canEdit(auth) && React.createElement("button", {
+    onClick: () => setShowUpload(true),
+    className: "ph-btn ph-btn-primary"
+  }, "⬆️ นำเข้า EXCEL จัดซื้อ"), canEdit(auth) && React.createElement("button", {
+    onClick: () => setShowAddItem(true),
+    className: "ph-btn ph-btn-green"
+  }, "✏️ เพิ่มรายการสั่งซื้อ"), React.createElement("button", {
+    onClick: () => setShowWalkIn(true),
+    className: "ph-btn ph-btn-outline"
+  }, "📦 รับของนอกรายการ"), React.createElement("button", {
+    onClick: () => {
+      localStorage.removeItem(GAS_URL_KEY);
+      setGasUrl("");
+    },
+    className: "ph-btn ph-btn-outline ph-btn-xs0",
+    title: "เปลี่ยน Google Sheet"
+  }, "⚙️"), React.createElement("div", {
+    className: "flex items-center gap-2 pl-2 border-l border-gray-200"
+  }, React.createElement("div", {
+    className: "text-right"
+  }, React.createElement("p", {
+    className: "text-xs font-medium text-gray-700"
+  }, auth && auth.displayName), React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, auth && auth.role === "admin" ? "👑 แอดมิน" : "👤 ผู้ใช้งาน")), React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, React.createElement("button", {
+    onClick: () => setShowChangePw(true),
+    className: "px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50",
+    title: "เปลี่ยน username/password"
+  }, "🔑 บัญชี"), canEdit(auth) && React.createElement("button", {
+    onClick: () => setShowAdminUsers(true),
+    className: "px-2 py-1 text-xs border border-teal-200 text-teal-700 rounded-lg hover:bg-teal-50",
+    title: "จัดการผู้ใช้"
+  }, "👥 ผู้ใช้"), React.createElement("button", {
+    onClick: () => {
+      clearAuth();
+      setAuth2(null);
+    },
+    className: "px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200",
+    title: "ออกจากระบบ"
+  }, "🚪 ออก"))))), !bannerDismissed && React.createElement(AlertBanner, {
+    items: pendingUrg,
+    onDismiss: () => setBannerDismissed(true)
+  }), React.createElement("div", {
+    className: "mf-stat-grid"
+  }, [{
+    l: "ทั้งหมด", v: stats.total,     icon:"📦", clr:"#2d9b61", bg:"#f0fdf4"
+  }, {
+    l: "รอรับของ", v: stats.ordered,   icon:"🚚", clr:"#2563eb", bg:"#eff6ff"
+  }, {
+    l: "รอตรวจรับ", v: stats.received, icon:"🔍", clr:"#d97706", bg:"#fffbeb"
+  }, {
+    l: "รอลง INVs", v: stats.inspected,icon:"💾", clr:"#7c3aed", bg:"#f5f3ff"
+  }, {
+    l: "เสร็จแล้ว", v: stats.entered,  icon:"✅", clr:"#059669", bg:"#ecfdf5"
+  }, {
+    l: "เร่งด่วน", v: stats.urgPending,icon:"⚡", clr:"#dc2626", bg:"#fff1f2"
+  }].map(s => React.createElement("div", {
+    key: s.l, className: "mf-stat-card",
+    style: {"--sc": s.clr, "--sb": s.bg}
+  },
+    React.createElement("div", {className: "mf-stat-icon"}, s.icon),
+    React.createElement("div", {className: "mf-stat-val"}, s.v),
+    React.createElement("div", {className: "mf-stat-lbl"}, s.l)
+  ))), React.createElement("div", {
+    className: "mb-3 overflow-x-auto"
+  }, React.createElement("div", {
+    className: "mf-tabs"
+  }, [["all", "ทั้งหมด"], ["ordered", "สั่งซื้อแล้ว"], ["received", "รับของแล้ว"], ["inspected", "ตรวจรับแล้ว"], ["entered", "ลงใน INVs แล้ว"]].map(([k, l]) => React.createElement("button", {
+    key: k,
+    onClick: () => setTab(k),
+    className: "mf-tab" + (tab === k ? " active" : "")
+  }, l)))), React.createElement("div", {
+    className: "flex gap-2 mb-2"
+  }, React.createElement("input", {
+    value: search,
+    onChange: e => setSearch(e.target.value),
+    placeholder: "ค้นหาชื่อยา / เวชภัณฑ์...",
+    className: "mf-search-input",
+    style: {
+      border: "1px solid #c8ddd1",
+      background: "white"
+    }
+  }), tab === "received" && React.createElement("select", {
+    value: filterLoc,
+    onChange: e => setFilterLoc(e.target.value),
+    style: {fontSize:"12px",border:"1.5px solid var(--c200)",borderRadius:"7px",padding:"0 10px",background:"white",color:"var(--c800)",fontFamily:"inherit",height:"36px",cursor:"pointer"}
+  }, React.createElement("option", {value:"all"}, "📍 ทุกคลัง"),
+    React.createElement("option", {value:"คลังยาใหญ่"}, "คลังยาใหญ่"),
+    React.createElement("option", {value:"คลังยาย่อย"}, "คลังยาย่อย")
+  ), React.createElement("button", {
+    onClick: () => setShowUrgent(!showUrgent),
+    className: "px-3 py-2 text-sm border rounded-lg whitespace-nowrap " + (showUrgent ? "bg-orange-50 text-orange-700 border-orange-300" : "border-gray-200 text-gray-500 hover:bg-gray-50")
+  }, "⚡ เร่งด่วน"), React.createElement("button", {
+    onClick: () => setDateFilter(p => ({
+      ...p,
+      active: !p.active
+    })),
+    className: "px-3 py-2 text-sm border rounded-lg whitespace-nowrap " + (dateFilter.active ? "bg-blue-50 text-blue-700 border-blue-300" : "border-gray-200 text-gray-500 hover:bg-gray-50"),
+    title: "กรองตามช่วงวันที่"
+  }, "📅 กรองวันที่", dateFilter.active && (dateFilter.from || dateFilter.to) && React.createElement("span", {
+    className: "ml-1 text-xs bg-blue-500 text-white rounded-full px-1.5"
+  }, "✓"))), dateFilter.active && React.createElement("div", {
+    className: "mf-filter-panel"
+  }, React.createElement("div", {
+    className: "flex items-center gap-2 flex-wrap"
+  }, React.createElement("span", {
+    className: "text-xs font-medium text-blue-700"
+  }, "📅 กรองตาม"), React.createElement("select", {
+    value: dateFilter.field,
+    onChange: e => setDateFilter(p => ({
+      ...p,
+      field: e.target.value
+    })),
+    className: "text-xs border border-blue-200 rounded-lg px-2 py-1.5 bg-white text-blue-800"
+  }, React.createElement("option", {
+    value: "od"
+  }, "วันที่สั่งซื้อ"), React.createElement("option", {
+    value: "rv"
+  }, "วันที่รับของ"), React.createElement("option", {
+    value: "ins"
+  }, "วันที่ตรวจรับ"), React.createElement("option", {
+    value: "en"
+  }, "วันที่ลงใน INVs")), React.createElement("span", {
+    className: "text-xs text-blue-600"
+  }, "ตั้งแต่"), React.createElement("input", {
+    type: "date",
+    value: dateFilter.from,
+    onChange: e => setDateFilter(p => ({
+      ...p,
+      from: e.target.value
+    })),
+    className: "text-xs border border-blue-200 rounded-lg px-2 py-1.5 bg-white text-blue-800"
+  }), React.createElement("span", {
+    className: "text-xs text-blue-600"
+  }, "ถึง"), React.createElement("input", {
+    type: "date",
+    value: dateFilter.to,
+    onChange: e => setDateFilter(p => ({
+      ...p,
+      to: e.target.value
+    })),
+    className: "text-xs border border-blue-200 rounded-lg px-2 py-1.5 bg-white text-blue-800"
+  }), (dateFilter.from || dateFilter.to) && React.createElement("span", {
+    className: "text-xs text-blue-700 font-medium"
+  }, "→ แสดง ", filtered.length, " รายการ"), React.createElement("button", {
+    onClick: () => setDateFilter(p => ({
+      ...p,
+      from: "",
+      to: ""
+    })),
+    className: "text-xs text-blue-500 hover:text-blue-700 underline ml-auto"
+  }, "ล้างวันที่"))), React.createElement("div", {
+    className: "rounded-xl overflow-hidden shadow-sm",
+    style: {
+      border: "1px solid #c8ddd1",
+      background: "white"
+    }
+  }, loading ? React.createElement("div", {
+    className: "text-center py-16 text-gray-400"
+  }, React.createElement("div", {
+    className: "text-3xl mb-2"
+  }, "⏳"), React.createElement("p", {
+    className: "text-sm"
+  }, "กำลังโหลดข้อมูลจาก Google Sheet...")) : React.createElement("div", {
+    className: "overflow-x-auto"
+  }, React.createElement("table", {
+    className: "w-full text-sm"
+  }, React.createElement("thead", {
+    className: "border-b",
+    style: {
+      background: "#f0faf4",
+      borderColor: "#c8ddd1"
+    }
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "240px",
+      width: "28%"
+    }
+  }, "รายการยา / เวชภัณฑ์"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "90px"
+    }
+  }, "จำนวนสั่งซื้อ"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "100px"
+    }
+  }, "ขนาดบรรจุ"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "90px"
+    }
+  }, dateFilter.active && dateFilter.field !== "od" ? React.createElement("span", {
+    title: "คลิกเพื่อกลับแสดงวันที่สั่งซื้อ"
+  }, dateFilter.field === "rv" ? "วันที่รับของ" : dateFilter.field === "ins" ? "วันที่ตรวจรับ" : "วันที่ลง INVs", React.createElement("span", {
+    className: "ml-1 text-blue-400 text-xs"
+  }, "📅")) : "วันที่สั่ง"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "130px"
+    }
+  }, "สถานะ"), tab === "received" && React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {minWidth: "120px"}
+  }, "📍 สถานที่เก็บยา"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      minWidth: "130px"
+    }
+  }, "ขั้นตอนปัจจุบัน"), React.createElement("th", {
+    className: "px-3 py-2.5 text-left text-xs font-bold text-white",
+    style: {
+      width: "44px"
+    }
+  }, "📎"), React.createElement("th", {
+    className: "px-3 py-2.5",
+    style: {
+      minWidth: "110px"
+    }
+  }))), React.createElement("tbody", null, filtered.length === 0 ? React.createElement("tr", null, React.createElement("td", {
+    colSpan: 8,
+    className: "text-center py-12 text-sm text-gray-400"
+  }, data.length === 0 ? "ยังไม่มีข้อมูล — เพิ่มรายการหรือนำเข้าไฟล์ Excel" : "ไม่พบรายการที่ค้นหา")) : (() => {
+    const inProgressNames = {};
+    data.filter(d => ["ordered", "received", "inspected"].includes(d.st)).forEach(d => {
+      const key = (d.name || "").trim().toLowerCase();
+      inProgressNames[key] = (inProgressNames[key] || 0) + 1;
+    });
+    const dupNames = new Set(Object.keys(inProgressNames).filter(k => inProgressNames[k] > 1));
+    return filtered.map(x => {
+      const nc = [x.rv && x.rv.note, x.ins && x.ins.note, x.en && x.en.note].filter(n => n && n.trim()).length;
+      const dispName = x.walkIn ? (x.name || "").replace("[นอกรายการ] ", "") : x.name;
+      const isDup = ["ordered", "received", "inspected"].includes(x.st) && dupNames.has((x.name || "").trim().toLowerCase());
+      return React.createElement("tr", {
+        key: x.id,
+        className: "border-b border-gray-100 hover:bg-green-50 last:border-0"
+      }, React.createElement("td", {
+        className: "px-3 py-2.5"
+      }, isDup ? React.createElement("span", {
+        className: "font-medium text-red-600"
+      }, dispName, " ", React.createElement("span", {
+        className: "text-xs font-normal bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1"
+      }, "⚠️ ซ้ำ")) : React.createElement("span", {
+        className: "font-medium text-gray-900"
+      }, dispName), x.walkIn && React.createElement("span", {
+        className: "ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full"
+      }, "นอกรายการ"), React.createElement("button", {
+        onClick: e => {
+          e.stopPropagation();
+          toggleUrg(x.id, !x.urg);
+        },
+        title: x.urg ? "เปลี่ยนเป็นปกติ" : "ตั้งเป็นเร่งด่วน",
+        className: "ml-2 text-xs px-1.5 py-0.5 rounded-full " + (x.urg ? "bg-orange-100 text-orange-800 hover:bg-orange-200" : "bg-gray-100 text-gray-400 hover:bg-orange-100 hover:text-orange-700")
+      }, x.urg ? "⚡ เร่งด่วน" : "○ ปกติ")), React.createElement("td", {
+        className: "px-3 py-2.5 text-gray-700"
+      }, x.qty ? Number(x.qty).toLocaleString() : "", " ", x.unit), React.createElement("td", {
+        className: "px-3 py-2.5 text-gray-500 text-xs"
+      }, x.pack || "—"), React.createElement("td", {
+        className: "px-3 py-2.5 text-gray-500"
+      }, dateFilter.active && dateFilter.field !== "od" ? fmtDate(getDateByField(x, dateFilter.field)) || React.createElement("span", {
+        className: "text-gray-300"
+      }, "—") : fmtDate(x.od)), React.createElement("td", {
+        className: "px-3 py-2.5"
+      }, React.createElement(StatusBadge, {
+        st: x.st
+      })), tab === "received" && React.createElement("td", {
+        className: "px-3 py-2.5"
+      }, x.rv && x.rv.loc ? React.createElement("span", {
+        style: {
+          fontSize:"11px",fontWeight:"600",padding:"2px 8px",borderRadius:"99px",
+          background: x.rv.loc === "คลังยาใหญ่" ? "#d1fae5" : "#fef3c7",
+          color: x.rv.loc === "คลังยาใหญ่" ? "#065f46" : "#92400e"
+        }
+      }, x.rv.loc) : React.createElement("span", {className:"text-gray-300 text-xs"}, "—")),
+      React.createElement("td", {
+        className: "px-3 py-2.5 text-xs text-gray-500"
+      }, ns(x)), React.createElement("td", {
+        className: "px-3 py-2.5"
+      }, nc > 0 ? React.createElement("span", {
+        className: "flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full cursor-pointer hover:bg-gray-200",
+        onClick: () => setDetailItem(x)
+      }, "💬", nc) : React.createElement("span", {
+        className: "text-gray-300 text-xs"
+      }, "—")), React.createElement("td", {
+        className: "px-3 py-2.5"
+      }, React.createElement("div", {
+        className: "flex items-center gap-1.5"
+      }, React.createElement("button", {
+        onClick: () => setDetailItem(x),
+        className: "text-xs border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-50 whitespace-nowrap"
+      }, al(x)), canEdit(auth) && React.createElement("button", {
+        onClick: () => setEditItem(x),
+        title: "แก้ไขข้อมูล (Admin)",
+        className: "text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-400 hover:text-teal-700 hover:border-teal-300 hover:bg-teal-50"
+      }, "✎"), canEdit(auth) && x.st !== "ordered" && React.createElement("button", {
+        onClick: () => setStatusItem(x),
+        title: "ย้อนกระบวนการ (Admin)",
+        className: "text-xs border border-amber-200 rounded-lg px-2 py-1 text-amber-600 hover:text-amber-800 hover:border-amber-400 hover:bg-amber-50"
+      }, "↩"), canEdit(auth) && React.createElement("button", {
+        onClick: () => deleteItem(x.id),
+        title: "ลบรายการนี้",
+        className: "text-xs border border-red-200 rounded-lg px-2 py-1 text-red-400 hover:text-red-700 hover:border-red-400 hover:bg-red-50"
+      }, "🗑️"), x.sourceA && React.createElement("span", {
+        className: "text-xs text-blue-400",
+        title: "ข้อมูลจากไฟล์แผนจัดซื้อ — แก้ไขที่ต้นทางเท่านั้น"
+      }, "🔗"))));
+    });
+  })())))), React.createElement("div", {
+    className: "mt-4 text-center text-xs text-gray-400"
+  }, "ข้อมูล realtime จาก Google Sheet · รวม ", data.length, " รายการ · auto-refresh ทุก ", POLL_MS / 1000, " วินาที"), React.createElement("div", {
+    className: "mt-3 pb-4 text-center",
+    style: {
+      borderTop: "1px solid #e6f4ed",
+      paddingTop: "12px",
+      marginTop: "16px"
+    }
+  }, React.createElement("p", {
+    className: "text-xs font-medium",
+    style: {
+      color: "#1e4d35"
+    }
+  }, "พัฒนาโดย ภญ.อรณี ปัตถาติ"), React.createElement("p", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: "#4a6a57"
+    }
+  }, "กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค"), React.createElement("p", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: "#4a6a57"
+    }
+  }, "โรงพยาบาลเขวาสินรินทร์"))), detailItem && React.createElement(DetailModal, {
+    auth: auth,
+    item: detailItem,
+    saving: saving,
+    onClose: () => setDetailItem(null),
+    onSaveRv: rv => saveItem({
+      ...detailItem,
+      rv,
+      st: "received"
+    }),
+    onSaveIns: ins => saveItem({
+      ...detailItem,
+      ins,
+      st: "inspected"
+    }),
+    onSaveEn: en => saveItem({
+      ...detailItem,
+      en,
+      st: "entered"
+    }),
+    onToggleUrg: newUrg => toggleUrg(detailItem.id, newUrg),
+    onEdit: () => {
+      setDetailItem(null);
+      setEditItem(detailItem);
+    }
+  }), editItem && React.createElement(EditItemModal, {
+    item: editItem,
+    saving: saving,
+    auth: auth,
+    onClose: () => setEditItem(null),
+    onSave: handleEditSave
+  }), showExport && React.createElement(ExportModal, {
+    data: data,
+    onClose: () => setShowExport(false),
+    onToast: addToast
+  }), showAlertSet && React.createElement(AlertSettingsModal, {
+    urgItems: pendingUrg,
+    onClose: () => setShowAlertSet(false),
+    onToast: addToast
+  }), showUpload && React.createElement(UploadModal, {
+    saving: saving,
+    onClose: () => setShowUpload(false),
+    onImport: (items, fn) => handleAddItems(items, "จากไฟล์ \"" + fn + "\"")
+  }), statusItem && canEdit(auth) && React.createElement(AdminStatusModal, {
+    item: statusItem,
+    saving: saving,
+    onClose: () => setStatusItem(null),
+    onSave: handleStatusChange
+  }), showWalkIn && React.createElement(WalkInModal, {
+    saving: saving,
+    auth: auth,
+    onClose: () => setShowWalkIn(false),
+    onSave: item => handleAddItems([item], "รับของนอกรายการ")
+  }), showAddItem && React.createElement(AddItemModal, {
+    saving: saving,
+    onClose: () => setShowAddItem(false),
+    onAdd: item => handleAddItems([item], "เพิ่มรายการสั่งซื้อ")
+  }), showDrugUpload && React.createElement(DrugListUploadModal, {
+    onClose: () => setShowDrugUpload(false),
+    onLoad: async names => {
+      setDrugList(names);
+      const url = gasUrl || localStorage.getItem(GAS_URL_KEY) || "";
+      if (url) {
+        try {
+          const res = await apiPost(url, {
+            action: "saveDrugList",
+            drugs: names
+          });
+          if (res.ok) {
+            addToast("บันทึกรายชื่อยาแล้ว", "sync " + names.length + " รายการใน Google Sheet ✅", "success");
+          } else {
+            addToast("บันทึกรายชื่อยาล้มเหลว", res.error || "ไม่สามารถ sync ได้", "error");
+          }
+        } catch (e) {
+          addToast("บันทึกรายชื่อยาล้มเหลว", "ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต", "error");
+        }
+      }
+    }
+  }), showChangePw && React.createElement(ChangeCredentialsModal, {
+    auth: auth,
+    onClose: () => setShowChangePw(false),
+    onUpdated: newAuth => {
+      setAuth2(newAuth);
+      setShowChangePw(false);
+      addToast("อัปเดตบัญชีสำเร็จ", "เปลี่ยนข้อมูลบัญชีเรียบร้อยแล้ว", "success");
+    }
+  }), showAdminUsers && React.createElement(AdminUsersModal, {
+    onClose: () => setShowAdminUsers(false)
+  }), confirmDialog && React.createElement(ConfirmModal, {
+    title: confirmDialog.title,
+    message: confirmDialog.message,
+    onConfirm: confirmDialog.onConfirm,
+    onCancel: confirmDialog.onCancel
+  })));
+}
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
+  static getDerivedStateFromError(e) {
+    return {
+      hasError: true,
+      error: e
+    };
+  }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement("div", {
+        style: {
+          padding: "20px",
+          background: "#fee2e2",
+          border: "1px solid #ef4444",
+          borderRadius: "12px",
+          margin: "20px",
+          fontFamily: "monospace"
+        }
+      }, React.createElement("h3", {
+        style: {
+          color: "#dc2626",
+          marginBottom: "8px"
+        }
+      }, "❌ เกิดข้อผิดพลาด"), React.createElement("p", {
+        style: {
+          color: "#7f1d1d",
+          fontSize: "14px"
+        }
+      }, this.state.error && this.state.error.message));
+    }
+    return this.props.children;
+  }
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+const loadingEl = document.getElementById('loading-indicator');
+if (loadingEl) loadingEl.style.display = 'none';
+root.render(React.createElement(ErrorBoundary, null, React.createElement(App, null)));
+</script>
+</body>
+</html>
